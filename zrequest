@@ -2,23 +2,23 @@
 *& Report  ZREQUEST
 *&
 *&---------------------------------------------------------------------*
-*& 1 - AtribuiÁ„o de valores para paramantro de ambiente
-*& 2 - AlteraÁ„o na forma de atribuiÁ„o dos farÛis de transpote
+*& 1 - Atribui√ß√£o de valores para paramantro de ambiente
+*& 2 - Altera√ß√£o na forma de atribui√ß√£o dos far√≥is de transpote
 *&   -> Verificar se existe algum log de transporte (icon empty)
 *&   -> Verificar se existe algum log de error (icon red)
 *&   -> Verificar se existe algum log de warning (icon yellow)
-*&   -> Verificar se existe algum log do id ExportaÁ„o (ambiente de origem,
+*&   -> Verificar se existe algum log do id Exporta√ß√£o (ambiente de origem,
 *&      supostamente o ambiente de qualidade (icon green)
-*&   -> Verificar se existe algum log do id ImportaÁ„o (icon green)
-*& 3 - AlteraÁ„o nomeclatura de variaveis
-*& 4 - AtualizaÁ„o de declaraÁıes de tabelas de tipos
-*& 4 - AlteraÁ„o do ALV de exibiÁ„o com opÁ„o de refresh (em desenvol)
+*&   -> Verificar se existe algum log do id Importa√ß√£o (icon green)
+*& 3 - Altera√ß√£o nomeclatura de variaveis
+*& 4 - Atualiza√ß√£o de declara√ß√µes de tabelas de tipos
+*& 4 - Altera√ß√£o do ALV de exibi√ß√£o com op√ß√£o de refresh (em desenvol)
 
 
 
 * obs: Form monta_relatorio - verificar se variaveis globais podem ser locais
 * obs: Form f_cria_tabela - verificar nomeclatura
-* obs: Verificar ordenaÁ„o por: data, hora e request
+* obs: Verificar ordena√ß√£o por: data, hora e request
 *&---------------------------------------------------------------------*
 
 report  zrequest  no standard page heading line-size 200 message-id >0 .
@@ -73,7 +73,7 @@ field-symbols: <fs_table> type standard table,
                <fs_field> type any.
 
 *--------------------------------------------------------------------*
-*- DeclaraÁıes Globais
+*- Declara√ß√µes Globais
 *--------------------------------------------------------------------*
 data: e_settings      type          ctslg_settings,
       gs_cofile       type          ctslg_cofile,
@@ -95,10 +95,10 @@ data: e_settings      type          ctslg_settings,
       wa_tmscsys      type          ty_tmscsys .
 
 *--------------------------------------------------------------------*
-** Vari·veis Globais do programa
+** Vari√°veis Globais do programa
 *--------------------------------------------------------------------*
-data: v_listheader  type slis_listheader, " CabeÁalho
-      v_alv_spos    type n length 2,      " PosiÁ„o
+data: v_listheader  type slis_listheader, " Cabe√ßalho
+      v_alv_spos    type n length 2,      " Posi√ß√£o
       wc_cont       type n length 10,
       gv_nao_gera   type c length 1,
       v_field       type lvc_fname,
@@ -125,7 +125,7 @@ data: gt_e070    type table of e070,
       gs_actions type ctslg_action.
 
 *--------------------------------------------------------------------*
-*- Classes DeclaraÁıes
+*- Classes Declara√ß√µes
 *--------------------------------------------------------------------*
 
 class cl_event_handler definition.
@@ -202,7 +202,7 @@ endclass.                    "lcl_report DEFINITION
 
 
 *--------------------------------------------------------------------*
-*- Classes ImplementaÁıes
+*- Classes Implementa√ß√µes
 *--------------------------------------------------------------------*
 class cl_event_handler implementation.
 
@@ -242,7 +242,7 @@ endclass.                    "cl_event_handler IMPLEMENTATION
 *data: lo_report     type ref to   lcl_report .
 *
 *&---------------------------------------------------------------------*
-*** Tela de seleÁ„o
+*** Tela de sele√ß√£o
 *&---------------------------------------------------------------------*
 selection-screen begin of block b1 with frame title text-001.
 
@@ -318,7 +318,7 @@ end-of-selection.
 **   perform monta_estrutura_do_alv.
 **   perform exibe_relatorio.
 *  else.
-*    message s000(zbc) with 'N„o existem dados para esta seleÁ„o!'.
+*    message s000(zbc) with 'N√£o existem dados para esta sele√ß√£o!'.
 *  endif.
 *
 *endform.                    " executar_relatorio
@@ -415,11 +415,11 @@ form f_seleciona_dados .
      and as4date    in p_data
      and strkorr    eq space.
   if sy-subrc ne 0 .
-    message s000 with 'N„o h· dados para seleÁ„o'.
+    message s000 with 'N√£o h√° dados para sele√ß√£o'.
     stop.
   endif.
 
-* Seleciona as descriÁıes da request
+* Seleciona as descri√ß√µes da request
   if not gt_e070[] is initial.
     select *
       from e07t
@@ -470,7 +470,7 @@ form seleciona_quebra_subtotal  using   i_fieldname   type c  " 1
   gs_alv_sort-down          =  i_down.         "
   gs_alv_sort-subtot        =  i_subtot.       " Subtotal
 
-*** '*' quebra de p·gina - 'UL' underline
+*** '*' quebra de p√°gina - 'UL' underline
   gs_alv_sort-group         =  i_group.        " Agrupar campo
 
   append gs_alv_sort to gt_alv_sort.
@@ -480,7 +480,7 @@ endform.                    " SELECIONA_QUEBRA_SUBTOTAL
 *&---------------------------------------------------------------------*
 *&      Form  monta_estrutura_do_alv
 *&---------------------------------------------------------------------*
-*       Monta a estrutura do relatÛrio ALV
+*       Monta a estrutura do relat√≥rio ALV
 *----------------------------------------------------------------------*
 form monta_estrutura_do_alv .
   free: gt_alv_fieldcat.
@@ -574,7 +574,7 @@ endform.                    " SELECIONA_CAMPOS_IMPRESSAO
 *&---------------------------------------------------------------------*
 *&      Form  exibe_relatorio
 *&---------------------------------------------------------------------*
-*       Exibe relatÛrio ALV
+*       Exibe relat√≥rio ALV
 *----------------------------------------------------------------------*
 form exibe_relatorio .
   data: l_repid like sy-repid,
@@ -737,10 +737,10 @@ form f_monta_relatorio .
     loop at s_amb.
 
 
-*     De acordo com a proposta de nova logica, ser· colocado o icone com farol apagado
-*     caso ainda n„o tenha a opÁ„o de importaÁ„o no historico da request.
-*     Caso tenho ao menos 1 warning, ser· o farol amarelo
-*     Caso tenho ao menos 1 erro, ser· o farol vermelho
+*     De acordo com a proposta de nova logica, ser√° colocado o icone com farol apagado
+*     caso ainda n√£o tenha a op√ß√£o de importa√ß√£o no historico da request.
+*     Caso tenho ao menos 1 warning, ser√° o farol amarelo
+*     Caso tenho ao menos 1 erro, ser√° o farol vermelho
 
       lv_systemid = s_amb-low.
 *     Ordenando de acordo com o Sistema
@@ -753,7 +753,7 @@ form f_monta_relatorio .
                                    binary search.
       if  sy-subrc eq 0 .
 *       Ordenando de acordo com o retorno.
-*       Cada aÁ„o de importaÁ„o da request tem um retorno.
+*       Cada a√ß√£o de importa√ß√£o da request tem um retorno.
         sort ls_ctslg_cofile-steps ascending by rc.
 
 *       Verificando se houve algum erro
@@ -770,14 +770,14 @@ form f_monta_relatorio .
             assign component lv_systemid of structure <fs_line> to <fs_field>.
             <fs_field> = icon_led_yellow.
           else.
-*           Verifica a opÁ„o de ExportaÁ„o (significa que È sistema de origem DEV)
+*           Verifica a op√ß√£o de Exporta√ß√£o (significa que √© sistema de origem DEV)
             read table ls_ctslg_cofile-steps into gs_steps
                                              with key stepid = 'E' .
             if sy-subrc eq 0 .
               assign component lv_systemid of structure <fs_line> to <fs_field>.
               <fs_field> = icon_led_green.
             else.
-*             Verificando se a opÁ„o ImportaÁ„o esta aplicada
+*             Verificando se a op√ß√£o Importa√ß√£o esta aplicada
               read table ls_ctslg_cofile-steps into gs_steps
                                                with key stepid = 'I' .
               if sy-subrc eq 0 .
@@ -842,7 +842,7 @@ form f_monta_relatorio .
       <fs_field> = gs_e070-korrdev.
     endif.
 
-*** DescriÁ„o da Request
+*** Descri√ß√£o da Request
     clear gs_e07t.
     read table gt_e07t into gs_e07t
                        with key trkorr = gs_e070-trkorr .
@@ -871,7 +871,7 @@ endform.                    " F_MONTA_RELATORIO
 * 002 Task
 * 003 Status Request
 * H01 Request
-* H02 PosiÁ„o
+* H02 Posi√ß√£o
 * H03 ID Programa
 * H04 Tp.Objeto
 * H05 Nome Objeto
@@ -882,7 +882,7 @@ endform.                    " F_MONTA_RELATORIO
 * H10 TpRequest
 * H11 Status
 * H12 Categoria
-* H13 DescriÁ„o
+* H13 Descri√ß√£o
 * H14 DescrTask
 * H15 ECQ
 * H16 RY1
@@ -904,13 +904,13 @@ endform.                    " F_MONTA_RELATORIO
 *Selection texts
 *----------------------------------------------------------
 * P_CATEG         Categoria
-* P_DATA         Data de criaÁ„o da request
+* P_DATA         Data de cria√ß√£o da request
 * P_ORDEM         Request
 * P_STAT         Requests pendentes ECP
 * P_TIPO         Status
-* P_USER         Usu·rio
+* P_USER         Usu√°rio
 * S_AMB         Ambiente
-* S_DTECP         Dt do transporte p/ PRODU«√O
+* S_DTECP         Dt do transporte p/ PRODU√á√ÉO
 
 
 *Messages
@@ -1128,7 +1128,7 @@ class lcl_report implementation.
         lo_display = lo_table->get_display_settings( ) .
         lo_display->set_striped_pattern(  cl_salv_display_settings=>true ) .
 
-*       OrdenaÁ„o de campos
+*       Ordena√ß√£o de campos
         lo_sorts = lo_table->get_sorts( ) .
         lo_sorts->add_sort('AS4DATE') .
         lo_sorts->add_sort('AS4TIME') .
