@@ -1,4 +1,12 @@
 *&---------------------------------------------------------------------*
+*& Report zteste
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+report zteste message-id >0 ..
+
+
+*&---------------------------------------------------------------------*
 *& Report  ZREQUEST
 *&
 *&---------------------------------------------------------------------*
@@ -21,7 +29,7 @@
 * obs: Verificar ordenação por: data, hora e request
 *&---------------------------------------------------------------------*
 
-report  zrequest  no standard page heading line-size 200 message-id >0 .
+*report  zrequest  no standard page heading line-size 200 message-id >0 .
 
 *--------------------------------------------------------------------*
 *- Includes
@@ -31,147 +39,94 @@ include <icon>.
 *--------------------------------------------------------------------*
 *- Tipos SAP
 *--------------------------------------------------------------------*
-type-pools: vrm,
-            slis,
-            ctslg,
-            kkblo,
-            icon,
-            sym.
+type-pools:
+  vrm, slis, ctslg, kkblo, icon, sym .
 
 *--------------------------------------------------------------------*
 *- Tabelas
 *--------------------------------------------------------------------*
-tables: e070,
-        trtarget.
+tables:
+  e070, trtarget.
 
 *--------------------------------------------------------------------*
 *- Tipos
 *--------------------------------------------------------------------*
 types:
-begin of ty_tmscsys,
-  domnam like tmscsys-domnam,
-  sysnam like tmscsys-sysnam,
-  limbo  like tmscsys-limbo,
-end of ty_tmscsys,
+  begin of ty_tmscsys,
+    domnam like tmscsys-domnam,
+    sysnam like tmscsys-sysnam,
+    limbo  like tmscsys-limbo,
+  end of ty_tmscsys,
 
-begin of ty_status,
-  status type trstatus,
-  descr  type c length 60,
-end of ty_status,
+  tmscsys_tab type table of ty_tmscsys,
 
-begin of ty_tipo,
-  tipo type trfunction,
-  desc type c length 42,
-end of ty_tipo.
+  begin of ty_status,
+    status type trstatus,
+    descr  type c length 60,
+  end of ty_status,
 
+  begin of ty_tipo,
+    tipo type trfunction,
+    desc type c length 42,
+  end of ty_tipo.
 
-*--------------------------------------------------------------------*
-*- Ponteiros
-*--------------------------------------------------------------------*
-field-symbols: <fs_table> type standard table,
-               <fs_line>  type any,
-               <fs_field> type any.
+field-symbols:
+  <fs_table> type standard table .
 
 *--------------------------------------------------------------------*
 *- Declarações Globais
 *--------------------------------------------------------------------*
-data: e_settings      type          ctslg_settings,
-      gs_cofile       type          ctslg_cofile,
-      e_systems       type          ctslg_systems,
-      gt_alv_layout   type          slis_layout_alv,
-      gt_alv_print    type          slis_print_alv,
-      gt_alv_sort     type          slis_t_sortinfo_alv,
-      gs_alv_sort     like line of  gt_alv_sort,
-      gt_alv_fieldcat type          slis_t_fieldcat_alv,
-      gs_alv_fieldcat like line of  gt_alv_fieldcat,
-      gt_fieldcatalog type          lvc_t_fcat,
-      gs_fieldcatalog like line of  gt_fieldcatalog,
-      gt_new_table    type ref to   data,
-      gs_new_line     type ref to   data,
-      gs_layout       type          slis_layout_alv,
-      gt_fieldcat     type          slis_t_fieldcat_alv,
-      gs_fieldcat     like line of  gt_fieldcat,
-      it_tmscsys      type table of ty_tmscsys,
-      wa_tmscsys      type          ty_tmscsys .
+data:
+  e_settings      type          ctslg_settings,
+  gs_cofile       type          ctslg_cofile,
+  e_systems       type          ctslg_systems,
+  gt_alv_layout   type          slis_layout_alv,
+  gt_alv_print    type          slis_print_alv,
+  gt_alv_sort     type          slis_t_sortinfo_alv,
+  gs_alv_sort     like line of  gt_alv_sort,
+  gt_alv_fieldcat type          slis_t_fieldcat_alv,
+  gs_alv_fieldcat like line of  gt_alv_fieldcat,
+  gt_fieldcatalog type          lvc_t_fcat,
+  gs_fieldcatalog like line of  gt_fieldcatalog,
+  gt_new_table    type ref to   data,
+  gs_new_line     type ref to   data,
+  gs_layout       type          slis_layout_alv,
+  gt_fieldcat     type          slis_t_fieldcat_alv,
+  gs_fieldcat     like line of  gt_fieldcat,
+  it_tmscsys      type table of ty_tmscsys,
+  wa_tmscsys      type          ty_tmscsys.
 
 *--------------------------------------------------------------------*
 ** Variáveis Globais do programa
 *--------------------------------------------------------------------*
-data: v_listheader  type slis_listheader, " Cabeçalho
-      v_alv_spos    type n length 2,      " Posição
-      wc_cont       type n length 10,
-      gv_nao_gera   type c length 1,
-      v_field       type lvc_fname,
-      v_long_text   type scrtext_l,
-      v_medium_text type scrtext_m,
-      v_short_text  type scrtext_s .
+data:
+  v_listheader  type slis_listheader, " Cabeçalho
+  v_alv_spos    type n length 2,      " Posição
+  wc_cont       type n length 10 .
+*  v_field       type lvc_fname,
+*  v_long_text   type scrtext_l,
+*  v_medium_text type scrtext_m,
+*  v_short_text  type scrtext_s.
 
-data: gt_e070    type table of e070,
-      gs_e070    type          e070,
-      gt_e070_2  type table of e070,
-      gs_e070_2  type          e070,
-      gt_e071    type table of e071,
-      gs_e071    type          e071,
-      gt_e071_2  type table of e071,
-      gs_e071_2  type          e071,
-      gt_e07t    type table of e07t,
-      gs_e07t    type          e07t,
-      gt_status  type table of ty_status,
-      gs_status  type          ty_status,
-      gt_tipo    type table of ty_tipo,
-      gs_tipo    type          ty_tipo,
+data:
+  gt_e070    type table of e070,
+  gs_e070    type          e070,
+  gt_e070_2  type table of e070,
+  gs_e070_2  type          e070,
+  gt_e071    type table of e071,
+  gs_e071    type          e071,
+  gt_e071_2  type table of e071,
+  gs_e071_2  type          e071,
+  gt_e07t    type table of e07t,
+  gs_e07t    type          e07t,
+  gt_status  type table of ty_status,
+  gs_status  type          ty_status,
+  gt_tipo    type table of ty_tipo,
+  gs_tipo    type          ty_tipo,
 
-      gs_steps   type ctslg_step,
-      gs_actions type ctslg_action.
+  gs_steps   type ctslg_step,
+  gs_actions type ctslg_action.
 
-*--------------------------------------------------------------------*
-*- Classes Declarações
-*--------------------------------------------------------------------*
-
-class cl_event_handler definition.
-
-  public section.
-
-    class-methods on_before_salv_function         " BEFORE_SALV_FUNCTION
-      for event if_salv_events_functions~before_salv_function
-        of cl_salv_events_table
-          importing e_salv_function.
-
-    class-methods on_after_salv_function          " AFTER_SALV_FUNCTION
-      for event if_salv_events_functions~before_salv_function
-        of cl_salv_events_table
-          importing e_salv_function.
-
-    class-methods on_added_function               " ADDED_FUNCTION
-      for event if_salv_events_functions~added_function
-        of cl_salv_events_table
-          importing e_salv_function.
-
-    class-methods on_top_of_page                  " TOP_OF_PAGE
-      for event if_salv_events_list~top_of_page
-        of cl_salv_events_table
-          importing r_top_of_page
-                    page
-                    table_index.
-
-    class-methods on_end_of_page                  " END_OF_PAGE
-      for event if_salv_events_list~end_of_page
-        of cl_salv_events_table
-          importing r_end_of_page
-                    page.
-
-    class-methods on_double_click                 " DOUBLE_CLICK
-      for event if_salv_events_actions_table~double_click
-        of cl_salv_events_table
-          importing row
-                    column.
-
-    class-methods on_link_click                   " LINK_CLICK
-      for event if_salv_events_actions_table~link_click
-        of cl_salv_events_table
-          importing row
-                    column.
-endclass.                    "cl_event_handler DEFINITION
 
 *----------------------------------------------------------------------*
 *       CLASS lcl_report DEFINITION
@@ -180,60 +135,93 @@ class lcl_report definition.
 
   public section.
 
-    data:
-      lo_table      type ref to cl_salv_table,
-      lo_events     type ref to cl_salv_events_table,
-      lo_columns    type ref to cl_salv_columns_table,
-      lo_column     type ref to cl_salv_column_list,
-*     lo_report     type ref to lcl_report,
-      lo_display    type ref to cl_salv_display_settings,
-      lo_sorts      type ref to cl_salv_sorts .
+    types:
+      begin of ty_tmscsys,
+        domnam type tmscsys-domnam,
+        sysnam type tmscsys-sysnam,
+        limbo  type tmscsys-limbo,
+      end of ty_tmscsys,
 
-    methods: get_data,
-             generate_output,
-             set_text importing i_field       type lvc_fname
-                                i_long_text   type scrtext_l
-                                i_medium_text type scrtext_m
-                                i_short_text  type scrtext_s
-                      changing  c_columns     type ref to cl_salv_columns_table
-                                c_column      type ref to cl_salv_column_list.
+      tmscsys_tab type table of ty_tmscsys.
+
+    data:
+      lo_table   type ref to cl_salv_table,
+      lo_events  type ref to cl_salv_events_table,
+*      lo_columns type ref to cl_salv_columns_table,
+*      lo_column  type ref to cl_salv_column_list,
+      lo_display type ref to cl_salv_display_settings,
+      lo_sorts   type ref to cl_salv_sorts.
+
+    methods get_data .
+
+    methods generate_output
+      importing
+        !t_tmscsys type tmscsys_tab .
+
+
+    class-methods on_before_salv_function         " BEFORE_SALV_FUNCTION
+      for event if_salv_events_functions~before_salv_function
+                  of cl_salv_events_table
+      importing e_salv_function.
+
+    class-methods on_after_salv_function          " AFTER_SALV_FUNCTION
+      for event if_salv_events_functions~before_salv_function
+                  of cl_salv_events_table
+      importing e_salv_function.
+
+    class-methods on_added_function               " ADDED_FUNCTION
+      for event if_salv_events_functions~added_function
+                  of cl_salv_events_table
+      importing e_salv_function.
+
+    class-methods on_top_of_page                  " TOP_OF_PAGE
+      for event if_salv_events_list~top_of_page
+                  of cl_salv_events_table
+      importing r_top_of_page
+                  page
+                  table_index.
+
+    class-methods on_end_of_page                  " END_OF_PAGE
+      for event if_salv_events_list~end_of_page
+                  of cl_salv_events_table
+      importing r_end_of_page
+                  page.
+
+    class-methods on_double_click                 " DOUBLE_CLICK
+      for event if_salv_events_actions_table~double_click
+                  of cl_salv_events_table
+      importing row
+                  column.
+
+    class-methods on_link_click                   " LINK_CLICK
+      for event if_salv_events_actions_table~link_click
+                  of cl_salv_events_table
+      importing row
+                  column.
+
+
+  protected section .
+
+  private section .
+
+    methods set_text
+      importing
+        !i_field       type lvc_fname
+        !i_long_text   type scrtext_l
+        !i_medium_text type scrtext_m
+        !i_short_text  type scrtext_s
+      changing
+        !c_columns     type ref to cl_salv_columns_table
+        !c_column      type ref to cl_salv_column_list.
+
+    methods set_text_output
+      importing
+        !t_tmscsys type tmscsys_tab
+      changing
+        !table     type ref to cl_salv_table .
+
 
 endclass.                    "lcl_report DEFINITION
-
-
-*--------------------------------------------------------------------*
-*- Classes Implementações
-*--------------------------------------------------------------------*
-class cl_event_handler implementation.
-
-  method on_before_salv_function.
-  endmethod.                    "ON_BEFORE_SALV_FUNCTION
-
-  method on_after_salv_function.
-  endmethod.                    "ON_AFTER_SALV_FUNCTION
-
-  method on_added_function.
-    break-point .
-
-*   lo_report->lo_table->get_data( ).
-*   lo_report->lo_table->refresh( ).
-
-  endmethod.                    "ON_ADDED_FUNCTION
-
-  method on_top_of_page.
-  endmethod.                    "ON_TOP_OF_PAGE
-
-  method on_end_of_page.
-  endmethod.                    "ON_END_OF_PAGE
-
-  method on_double_click.
-  endmethod.                    "ON_DOUBLE_CLICK
-
-  method on_link_click.
-    perform f_on_link_click using row column .
-  endmethod.                    "ON_LINK_CLICK
-
-endclass.                    "cl_event_handler IMPLEMENTATION
 
 
 **--------------------------------------------------------------------*
@@ -295,33 +283,10 @@ start-of-selection .
 
   lo_report->get_data( ).
 
-  lo_report->generate_output( ).
+  lo_report->generate_output( t_tmscsys = it_tmscsys ).
 
-* perform executar_relatorio.
 
 end-of-selection.
-
-**&---------------------------------------------------------------------*
-**&      Form  executar_relatorio
-**&---------------------------------------------------------------------*
-*form executar_relatorio .
-*
-*  perform f_limpa_dados .
-*  perform f_carrega_descricao.
-*  perform f_seleciona_dados.
-*  perform f_cria_tabela.
-*  perform f_monta_relatorio.
-*
-*  if not <fs_table>[] is initial.
-*    perform f_display .
-**   perform monta_quebra_subtotal.
-**   perform monta_estrutura_do_alv.
-**   perform exibe_relatorio.
-*  else.
-*    message s000(zbc) with 'Não existem dados para esta seleção!'.
-*  endif.
-*
-*endform.                    " executar_relatorio
 
 *&---------------------------------------------------------------------*
 *&      Form  f_limpa_dados
@@ -354,11 +319,11 @@ form f_carrega_descricao .
         ls_t_list type          vrm_value.
 
   call function 'FICO_DOMAIN_VALUES_GET'
-    EXPORTING
+    exporting
       i_table_name = 'E070'
       i_field_name = 'TRSTATUS'
       i_langu      = sy-langu
-    IMPORTING
+    importing
       e_t_list     = lt_t_list.
 
   loop at lt_t_list into ls_t_list.
@@ -376,11 +341,11 @@ form f_carrega_descricao .
   clear   ls_t_list .
 
   call function 'FICO_DOMAIN_VALUES_GET'
-    EXPORTING
+    exporting
       i_table_name = 'E070'
       i_field_name = 'TRFUNCTION'
       i_langu      = sy-langu
-    IMPORTING
+    importing
       e_t_list     = lt_t_list.
 
   loop at lt_t_list into ls_t_list .
@@ -578,14 +543,14 @@ endform.                    " SELECIONA_CAMPOS_IMPRESSAO
 *----------------------------------------------------------------------*
 form exibe_relatorio .
   data: l_repid like sy-repid,
-        l_page    type  slis_formname.
+        l_page  type  slis_formname.
 
   gt_alv_print-no_coverpage       = 'X'.
   l_repid                         = sy-repid.
   gt_alv_layout-colwidth_optimize = 'X'.
 
   call function 'REUSE_ALV_GRID_DISPLAY'
-    EXPORTING
+    exporting
       i_callback_program      = l_repid
       i_callback_user_command = 'F_USER_COMMAND'
       is_layout               = gt_alv_layout
@@ -598,9 +563,9 @@ form exibe_relatorio .
       i_screen_start_line     = 0
       i_screen_end_column     = 0
       i_screen_end_line       = 0
-    TABLES
+    tables
       t_outtab                = <fs_table>
-    EXCEPTIONS
+    exceptions
       program_error           = 1
       others                  = 2.
 
@@ -648,8 +613,12 @@ endform.                    " F_STATUS_SET
 *----------------------------------------------------------------------*
 form f_cria_tabela .
 
+  field-symbols:
+    <fs_line>  type any .
+
 * Limpando objetos
-  unassign: <fs_table>, <fs_line>, <fs_field>.
+  unassign: <fs_table>, <fs_line>. "<fs_field>.
+
   refresh:  gt_fieldcatalog .
   clear:    gs_fieldcatalog, gt_new_table .
 
@@ -677,11 +646,11 @@ form f_cria_tabela .
 
 * Cria Campos
   call method cl_alv_table_create=>create_dynamic_table
-    EXPORTING
+    exporting
       it_fieldcatalog           = gt_fieldcatalog
-    IMPORTING
+    importing
       ep_table                  = gt_new_table
-    EXCEPTIONS
+    exceptions
       generate_subpool_dir_full = 1
       others                    = 2.
 
@@ -708,15 +677,21 @@ endform.                    " CRIA_TABELA
 *----------------------------------------------------------------------*
 form f_monta_relatorio .
 
-  data: ls_ctslg_cofile    type ctslg_system,
-        lv_qtd_task        type n length 4,
-        lv_qtd_cont        type n length 4,
-        lv_systemid        like tstrfcofil-tarsystem,
-        lv_linhas          type n length 4,
-        lv_controla_transp type c,
-        lv_ult_reg         type i.
+  data:
+    ls_ctslg_cofile    type ctslg_system,
+    lv_qtd_task        type n length 4,
+    lv_qtd_cont        type n length 4,
+    lv_systemid        like tstrfcofil-tarsystem,
+    lv_linhas          type n length 4,
+    lv_controla_transp type c,
+    lv_ult_reg         type i,
+    gv_nao_gera        type c length 1.
 
-*  delete gt_e070 where trkorr(3) ne sy-sysid.
+  field-symbols:
+    <fs_line>  type any,
+    <fs_field> type any.
+
+  assign gs_new_line->* to <fs_line> .
 
   loop at gt_e070 into gs_e070 .
 
@@ -726,14 +701,15 @@ form f_monta_relatorio .
     e_settings-detailed_depiction     = 'X'.
 
     call function 'TR_READ_GLOBAL_INFO_OF_REQUEST'
-      EXPORTING
+      exporting
         iv_trkorr   = gs_e070-trkorr
         iv_dir_type = 'T'
         is_settings = e_settings
-      IMPORTING
+      importing
         es_cofile   = gs_cofile.
 
     clear gv_nao_gera.
+
     loop at s_amb.
 
 
@@ -865,137 +841,7 @@ form f_monta_relatorio .
 
 endform.                    " F_MONTA_RELATORIO
 
-*Text elements
-*----------------------------------------------------------
-* 001 Pesquisa de requests
-* 002 Task
-* 003 Status Request
-* H01 Request
-* H02 Posição
-* H03 ID Programa
-* H04 Tp.Objeto
-* H05 Nome Objeto
-* H06 User Request
-* H07 Data Request
-* H08 Task
-* H09 User Task
-* H10 TpRequest
-* H11 Status
-* H12 Categoria
-* H13 Descrição
-* H14 DescrTask
-* H15 ECQ
-* H16 RY1
-* H17 ECP
-* H18 Hora Request
-* H19 RW1
-* H20 ECV
-* H21 ECT
-* H22 EV2
-* H23 Dt envio ECP
-* H24 Hr envio ECP
-* H25 ED2
-* H26 EQ2
-* H27 ECD
-* H28 ECQ
-* H29 ET2
 
-
-*Selection texts
-*----------------------------------------------------------
-* P_CATEG         Categoria
-* P_DATA         Data de criação da request
-* P_ORDEM         Request
-* P_STAT         Requests pendentes ECP
-* P_TIPO         Status
-* P_USER         Usuário
-* S_AMB         Ambiente
-* S_DTECP         Dt do transporte p/ PRODUÇÃO
-
-
-*Messages
-*----------------------------------------------------------
-*
-* Message class: ZBC
-*000   & & & &
-*&---------------------------------------------------------------------*
-*&      Form  F_DISPLAY
-*&---------------------------------------------------------------------*
-*       text
-*----------------------------------------------------------------------*
-*  -->  p1        text
-*  <--  p2        text
-*----------------------------------------------------------------------*
-*form f_display .
-*
-*  data:
-*    lo_table      type ref to cl_salv_table,
-*    lo_events     type ref to cl_salv_events_table,
-*    lo_columns    type ref to cl_salv_columns_table,
-*    lo_column     type ref to cl_salv_column_list,
-*    lo_report     type ref to lcl_report .
-*
-*  try.
-*      call method cl_salv_table=>factory
-*        IMPORTING
-*          r_salv_table = lo_table
-*        CHANGING
-*          t_table      = <fs_table>[].
-*
-*      lo_events = lo_table->get_event( ).
-*
-**     set handler cl_event_handler=>on_before_salv_function for lo_events.
-**     set handler cl_event_handler=>on_after_salv_function for lo_events.
-**     set handler cl_event_handler=>on_added_function for lo_events.
-**     set handler cl_event_handler=>on_top_of_page for lo_events.
-**     set handler cl_event_handler=>on_end_of_page for lo_events.
-**     set handler cl_event_handler=>on_double_click for lo_events.
-*      set handler cl_event_handler=>on_link_click for lo_events.
-*
-**     ALV-Toolbar
-*      lo_table->set_screen_status(
-*        pfstatus      = 'STANDARD_FULLSCREEN'
-*        report        = 'SAPLSLVC_FULLSCREEN'
-*        set_functions = lo_table->c_functions_all ).
-*
-**     Set column as hotspot
-*      lo_columns = lo_table->get_columns( ).
-**     Otimizando largura das colunas
-*      lo_columns->set_optimize( 'X' ).
-*      lo_column ?= lo_columns->get_column( 'TRKORR' ).
-*      lo_column->set_cell_type( if_salv_c_cell_type=>hotspot ).
-*
-*      create object lo_report .
-*      loop at it_tmscsys into wa_tmscsys .
-*
-*        move: wa_tmscsys-sysnam to v_field,
-*              wa_tmscsys-sysnam to v_long_text,
-*              wa_tmscsys-sysnam to v_medium_text,
-*              wa_tmscsys-sysnam to v_short_text .
-*
-*        lo_report->set_text(
-*          exporting
-*            i_field       = v_field
-*            i_long_text   = v_long_text
-*            i_medium_text = v_medium_text
-*            i_short_text  = v_short_text
-*          changing
-*            c_columns     = lo_columns
-*            c_column      = lo_column
-*        ).
-*      endloop.
-*
-*      lo_table->display( ).
-*
-*    catch cx_salv_msg.             " cl_salv_table=>factory()
-*      write: / 'cx_salv_msg exception'.
-*      stop.
-*    catch cx_salv_not_found.       " cl_salv_columns_table->get_column()
-*      write: / 'cx_salv_not_found exception'.
-*      stop.
-*  endtry.
-*
-*endform.                    " F_DISPLAY
 *&---------------------------------------------------------------------*
 *&      Form  F_ON_LINK_CLICK
 *&---------------------------------------------------------------------*
@@ -1004,6 +850,11 @@ form f_on_link_click  using    p_row
 
   data: vl_trkorr type trkorr .
 
+
+  field-symbols:
+    <fs_line>  type any,
+    <fs_field> type any.
+
   read table <fs_table> assigning <fs_line> index p_row .
   if sy-subrc eq 0 .
     assign component 'TRKORR' of structure <fs_line> to <fs_field>.
@@ -1011,10 +862,10 @@ form f_on_link_click  using    p_row
       move <fs_field> to vl_trkorr .
       call function 'TR_LOG_OVERVIEW_REQUEST_REMOTE'
         exporting
-          iv_trkorr              = vl_trkorr
+          iv_trkorr = vl_trkorr
 *         iv_dirtype             =
 *         iv_without_check       = ' '
-                .
+        .
     endif.
   endif.
 
@@ -1065,64 +916,54 @@ class lcl_report implementation.
 
   method generate_output .
 
+    data:
+      column  type ref to cl_salv_column_list,
+      columns type ref to cl_salv_columns_table.
+
     try.
         call method cl_salv_table=>factory
-          IMPORTING
+          importing
             r_salv_table = lo_table
-          CHANGING
+          changing
             t_table      = <fs_table>[].
 
 
         lo_events = lo_table->get_event( ).
 
-*       instantiate the event handler object
-        data: lo_event_handler type ref to cl_event_handler.
-        create object lo_event_handler.
-
-*       set handler cl_event_handler=>on_before_salv_function for lo_events.
-*       set handler cl_event_handler=>on_after_salv_function for lo_events.
-        set handler cl_event_handler=>on_added_function for lo_events.
-*       set handler cl_event_handler=>on_top_of_page for lo_events.
-*       set handler cl_event_handler=>on_end_of_page for lo_events.
-*       set handler cl_event_handler=>on_double_click for lo_events.
-        set handler cl_event_handler=>on_link_click for lo_events.
+***       instantiate the event handler object
+**        data: lo_event_handler type ref to cl_event_handler.
+**        create object lo_event_handler.
+**
+***       set handler cl_event_handler=>on_before_salv_function for lo_events.
+***       set handler cl_event_handler=>on_after_salv_function for lo_events.
+**        set handler cl_event_handler=>on_added_function for lo_events.
+***       set handler cl_event_handler=>on_top_of_page for lo_events.
+***       set handler cl_event_handler=>on_end_of_page for lo_events.
+***       set handler cl_event_handler=>on_double_click for lo_events.
+**        set handler cl_event_handler=>on_link_click for lo_events.
 
 *     ALV-Toolbar
         lo_table->set_screen_status(
 *         pfstatus      = 'ZTESTE'
-          pfstatus      = 'STANDARD_FULLSCREEN' 
-          report        = 'SAPLKKBL'		  
+          pfstatus      = 'STANDARD_FULLSCREEN'
 *         report        = sy-cprog
+          report        = 'SAPLKKBL'
           set_functions = lo_table->c_functions_all ).
 
 *     Set column as hotspot
-        lo_columns = lo_table->get_columns( ).
+        columns = lo_table->get_columns( ).
 
 *     Otimizando largura das colunas
-        lo_columns->set_optimize( 'X' ).
-        lo_column ?= lo_columns->get_column( 'TRKORR' ).
-        lo_column->set_cell_type( if_salv_c_cell_type=>hotspot ).
+        columns->set_optimize( 'X' ).
+        column ?= columns->get_column( 'TRKORR' ).
+        column->set_cell_type( if_salv_c_cell_type=>hotspot ).
 
-**       Colocando nome nos ambientes
-*        create object lo_report .
-*        loop at it_tmscsys into wa_tmscsys .
-*
-*          move: wa_tmscsys-sysnam to v_field,
-*                wa_tmscsys-sysnam to v_long_text,
-*                wa_tmscsys-sysnam to v_medium_text,
-*                wa_tmscsys-sysnam to v_short_text .
-*
-*          lo_report->set_text(
-*            exporting
-*              i_field       = v_field
-*              i_long_text   = v_long_text
-*              i_medium_text = v_medium_text
-*              i_short_text  = v_short_text
-*            changing
-*              c_columns     = lo_columns
-*              c_column      = lo_column
-*          ).
-*        endloop.
+        me->set_text_output(
+          exporting
+            t_tmscsys = t_tmscsys
+          changing
+            table     = lo_table
+        ).
 
 *       Layout de Zebra
         lo_display = lo_table->get_display_settings( ) .
@@ -1140,6 +981,7 @@ class lcl_report implementation.
         write: / 'cx_salv_msg exception'.
       catch cx_salv_not_found.       " cl_salv_columns_table->get_column()
         write: / 'cx_salv_not_found exception'.
+      catch  cx_salv_object_not_found .
     endtry.
 
   endmethod .                    "generate_output
@@ -1155,5 +997,70 @@ class lcl_report implementation.
       catch cx_salv_not_found .
     endtry .
 
-  endmethod .                    "set_text
+  endmethod .
+
+  method set_text_output .
+
+    data:
+      line        type ty_tmscsys,
+      field       type lvc_fname,
+      long_text   type scrtext_l,
+      medium_text type scrtext_m,
+      short_text  type scrtext_s,
+      column      type ref to cl_salv_column_list,
+      columns     type ref to cl_salv_columns_table.
+
+    break abap00 .
+
+    columns = table->get_columns( ).
+
+    loop at t_tmscsys into line .
+
+      field       = line-sysnam .
+      long_text   = line-sysnam .
+      medium_text = line-sysnam .
+      short_text  = line-sysnam .
+
+      me->set_text(
+        exporting
+          i_field       = field
+          i_long_text   = long_text
+          i_medium_text = medium_text
+          i_short_text  = short_text
+        changing
+          c_columns     = columns
+          c_column      = column
+      ).
+
+    endloop.
+
+  endmethod.
+
+
+  method on_before_salv_function.
+  endmethod.                    "ON_BEFORE_SALV_FUNCTION
+
+  method on_after_salv_function.
+  endmethod.                    "ON_AFTER_SALV_FUNCTION
+
+  method on_added_function.
+    break-point .
+
+*   lo_report->lo_table->get_data( ).
+*   lo_report->lo_table->refresh( ).
+
+  endmethod.                    "ON_ADDED_FUNCTION
+
+  method on_top_of_page.
+  endmethod.                    "ON_TOP_OF_PAGE
+
+  method on_end_of_page.
+  endmethod.                    "ON_END_OF_PAGE
+
+  method on_double_click.
+  endmethod.                    "ON_DOUBLE_CLICK
+
+  method on_link_click.
+    perform f_on_link_click using row column .
+  endmethod.                    "ON_LINK_CLICK
 endclass.                    "lcl_report IMPLEMENTATION
