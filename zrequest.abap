@@ -55,39 +55,6 @@ types:
     limbo  type tmscsys-limbo,
   end of ty_tmscsys .
 
-field-symbols:
-  <fs_table> type standard table .
-
-*--------------------------------------------------------------------*
-*- Declarações Globais
-*--------------------------------------------------------------------*
-data:
-  e_systems       type          ctslg_systems,
-  gt_alv_layout   type          slis_layout_alv,
-  gt_alv_print    type          slis_print_alv,
-  gt_alv_sort     type          slis_t_sortinfo_alv,
-  gs_alv_sort     like line of  gt_alv_sort,
-  gt_alv_fieldcat type          slis_t_fieldcat_alv,
-  gs_alv_fieldcat like line of  gt_alv_fieldcat,
-  gt_fieldcatalog type          lvc_t_fcat,
-  gs_fieldcatalog like line of  gt_fieldcatalog,
-  gt_new_table    type ref to   data,
-  gs_new_line     type ref to   data,
-  gs_layout       type          slis_layout_alv,
-  gt_fieldcat     type          slis_t_fieldcat_alv,
-  gs_fieldcat     like line of  gt_fieldcat,
-  it_tmscsys      type table of ty_tmscsys,
-  wa_tmscsys      type          ty_tmscsys.
-
-*--------------------------------------------------------------------*
-** Variáveis Globais do programa
-*--------------------------------------------------------------------*
-data:
-  v_listheader type slis_listheader, " Cabeçalho
-  v_alv_spos   type n length 2,      " Posição
-  wc_cont      type n length 10.
-
-
 
 *----------------------------------------------------------------------*
 *       CLASS lcl_report DEFINITION
@@ -150,9 +117,9 @@ class lcl_report definition.
 
     class-methods initial
       changing
-        ambiente type r_sysnam
-        status   type r_status
-        data     type wrf_ref_date_rtty .
+        ambiente type r_sysnam .
+
+    methods cria_tabela .
 
     methods get_data
       importing
@@ -161,13 +128,12 @@ class lcl_report definition.
         !tipo         type trg_char1
         !status       type r_status
         !categoria    type trg_char4
-        !usuario      type fip_t_uname_range
-        !data         type wrf_ref_date_rtty
-        !data_produca type wrf_ref_date_rtty .
+        !usuario      type wcft_cc_sel_range_user_tab
+        !data         type trg_date
+        !data_produca type trg_date .
 
-    methods generate_output
-      importing
-        !t_tmscsys type tmscsys_tab .
+
+    methods generate_output .
 
 
     class-methods on_before_salv_function         " BEFORE_SALV_FUNCTION
@@ -215,10 +181,13 @@ class lcl_report definition.
 
   private section .
 
+    data:
+      table type ref to data .
+
+
     methods limpar_dados
       changing
         !e070   type e070_t
-        !e071   type e071_t
         !e07t   type e07t_t
         !status type status_tab
         !tipo   type tipo_tab .
@@ -234,15 +203,11 @@ class lcl_report definition.
         !tipo      type trg_char1
         !status    type r_status
         !categoria type trg_char4
-        !usuario   type fip_t_uname_range
-        !data      type wrf_ref_date_rtty
+        !usuario   type wcft_cc_sel_range_user_tab
+        !data      type trg_date
       changing
         !e070      type e070_t
         !e07t      type e07t_t .
-
-    methods cria_tabela
-      changing
-        !table type standard table .
 
     methods cria_coluna
       importing
@@ -258,7 +223,10 @@ class lcl_report definition.
         !e070   type e070_t
         !tipo   type tipo_tab
         !status type status_tab
-        !e07t   type e07t_t .
+        !e07t   type e07t_t
+        !table  type ref to data
+      exporting
+        !outtab type standard table .
 
     methods set_text
       importing
@@ -284,483 +252,6 @@ class lcl_report definition.
 
 endclass.                    "lcl_report DEFINITION
 
-
-
-****&---------------------------------------------------------------------*
-****&      Form  MONTA_QUEBRA_SUBTOTAL
-****&---------------------------------------------------------------------*
-****       Monta quebra
-****----------------------------------------------------------------------*
-***form monta_quebra_subtotal .
-***
-***  perform seleciona_quebra_subtotal using:
-***        'AS4DATE'  '<fs_table>'  'X' ''  ''   'X',
-***        'AS4TIME'  '<fs_table>'  'X' ''  ''   'X',
-***        'TRKORR'   '<fs_table>'  'X' ''  ''   'X',
-***        'DESCREQ'  '<fs_table>'  'X' ''  ''   'X'.
-***endform.                    " MONTA_QUEBRA_SUBTOTAL
-****&---------------------------------------------------------------------*
-****&      Form  SELECIONA_QUEBRA_SUBTOTAL
-****&---------------------------------------------------------------------*
-****       text
-****----------------------------------------------------------------------*
-****      -->P_0433   text
-****      -->P_C_TPRINT  text
-****      -->P_C_X  text
-****      -->P_0436   text
-****      -->P_0437   text
-****      -->P_C_X  text
-****----------------------------------------------------------------------*
-***form seleciona_quebra_subtotal  using   i_fieldname   type c  " 1
-***                                        i_tabname     type c  " 2
-***                                        i_up          type c  " 3
-***                                        i_down        type c  " 4
-***                                        i_subtot      type c  " 5
-***                                        i_group       type c. " 6
-***  v_alv_spos = v_alv_spos + 1.
-***
-***  gs_alv_sort-spos          =  v_alv_spos.     "
-***  gs_alv_sort-fieldname     =  i_fieldname.    " Campo p/ quebra
-***  gs_alv_sort-tabname       =  i_tabname.      "
-***  gs_alv_sort-up            =  i_up.           "
-***  gs_alv_sort-down          =  i_down.         "
-***  gs_alv_sort-subtot        =  i_subtot.       " Subtotal
-***
-****** '*' quebra de página - 'UL' underline
-***  gs_alv_sort-group         =  i_group.        " Agrupar campo
-***
-***  append gs_alv_sort to gt_alv_sort.
-***  clear  gs_alv_sort.
-***
-***endform.                    " SELECIONA_QUEBRA_SUBTOTAL
-****&---------------------------------------------------------------------*
-****&      Form  monta_estrutura_do_alv
-****&---------------------------------------------------------------------*
-****       Monta a estrutura do relatório ALV
-****----------------------------------------------------------------------*
-***form monta_estrutura_do_alv .
-***  free: gt_alv_fieldcat.
-***
-***  perform seleciona_campos_impressao using :
-***        'X' 'X' 'X' 'AS4DATE' '<fs_table>' '' text-h07 '' 'C' '' '' '' '' ''.
-***  perform seleciona_campos_impressao using :
-***        'X' 'X' 'X' 'AS4TIME' '<fs_table>' '' text-h18 '' 'C' '' '' '' '' ''.
-***
-***  loop at s_amb.
-***    perform seleciona_campos_impressao using :
-***          '' '' 'X' s_amb-low '<fs_table>' '' s_amb-low '' 'C' '' '' '' '' ''.
-***  endloop.
-***
-***  perform seleciona_campos_impressao using :
-***        'X' 'X' 'X' 'DTECP' '<fs_table>' '' text-h23 '' 'C' '' '' '' '' ''.
-***  perform seleciona_campos_impressao using :
-***        'X' 'X' 'X' 'TMECP' '<fs_table>' '' text-h24 '' 'C' '' '' '' '' ''.
-***  perform seleciona_campos_impressao using :
-***        'X' 'X' 'X' 'TRKORR' '<fs_table>' '' text-h01 '' 'C' '' '' '' '' 'X'.
-***  perform seleciona_campos_impressao using :
-***        '' '' 'X' 'DESCREQ' '<fs_table>' '' text-h13 '' 'L' '' '' '' '' ''.
-***  perform seleciona_campos_impressao using :
-***        '' '' 'X' 'AS4USER' '<fs_table>' '' text-h06 '' 'C' '' '' '' '' ''.
-***  perform seleciona_campos_impressao using :
-***        '' '' 'X' 'TRFUNCTION' '<fs_table>' '' text-h10 '' 'C' '' '' '' '' ''.
-***  perform seleciona_campos_impressao using :
-***        '' '' 'X' 'TRSTATUS' '<fs_table>' '' text-h11 '' 'C' '' '' '' '' ''.
-***  perform seleciona_campos_impressao using :
-***        '' '' 'X' 'KORRDEV' '<fs_table>' '' text-h12 '' 'C' '' '' '' '' ''.
-***endform.                    " monta_estrutura_do_alv
-****&---------------------------------------------------------------------*
-****&      Form  SELECIONA_CAMPOS_IMPRESSAO
-****&---------------------------------------------------------------------*
-****       text
-****----------------------------------------------------------------------*
-****      -->P_0175   text
-****      -->P_C_X  text
-****      -->P_C_X  text
-****      -->P_C_DATUM  text
-****      -->P_C_TPRINT  text
-****      -->P_0180   text
-****      -->P_TEXT_H01  text
-****      -->P_0182   text
-****      -->P_C_C  text
-****      -->P_C_10  text
-****      -->P_0185   text
-****      -->P_0186   text
-****      -->P_0187   text
-****----------------------------------------------------------------------*
-***form seleciona_campos_impressao  using  i_fixc        type c  " 1
-***                                        i_key         type c  " 2
-***                                        i_emph        type c  " 3
-***                                        i_field       type c  " 1
-***                                        i_tab         type c  " 2
-***                                        i_ref         type c  " 3
-***                                        i_text        type c  " 4
-***                                        i_sum         type c  " 5
-***                                        i_just        type c  " 6
-***                                        i_outputlen   type c  " 7
-***                                        i_datatype    type c  " 8
-***                                        i_no_out      type c  " 9
-***                                        i_mark        type c  " 10
-***                                        i_hotspot     type c. " 11
-***
-***  gs_alv_fieldcat-fix_column      =  i_fixc.
-***  gs_alv_fieldcat-key             =  i_key.
-***  gs_alv_fieldcat-emphasize       =  i_emph.
-***  gs_alv_fieldcat-fieldname       =  i_field.
-***  gs_alv_fieldcat-tabname         =  i_tab.
-***  gs_alv_fieldcat-ref_tabname     =  i_ref.
-***  gs_alv_fieldcat-reptext_ddic    =  i_text.
-***  gs_alv_fieldcat-do_sum          =  i_sum.
-***  gs_alv_fieldcat-just            =  i_just.
-***  if not i_outputlen is initial.
-***    gs_alv_fieldcat-outputlen     =  i_outputlen.
-***  else.
-***    clear:                           gs_alv_fieldcat-outputlen.
-***  endif.
-***  gs_alv_fieldcat-datatype        =  i_datatype.
-***  gs_alv_fieldcat-no_out          =  i_no_out.
-***  gs_alv_fieldcat-checkbox        =  i_mark.
-***  gs_alv_fieldcat-hotspot         =  i_hotspot.
-***
-****** No_zero
-***  gs_alv_fieldcat-no_zero = 'X'.
-***  append gs_alv_fieldcat to gt_alv_fieldcat.
-***  clear  gs_alv_fieldcat.
-***
-***endform.                    " SELECIONA_CAMPOS_IMPRESSAO
-****&---------------------------------------------------------------------*
-****&      Form  exibe_relatorio
-****&---------------------------------------------------------------------*
-****       Exibe relatório ALV
-****----------------------------------------------------------------------*
-***form exibe_relatorio .
-***  data: l_repid like sy-repid,
-***        l_page  type  slis_formname.
-***
-***  gt_alv_print-no_coverpage       = 'X'.
-***  l_repid                         = sy-repid.
-***  gt_alv_layout-colwidth_optimize = 'X'.
-***
-***  call function 'REUSE_ALV_GRID_DISPLAY'
-***    exporting
-***      i_callback_program      = l_repid
-***      i_callback_user_command = 'F_USER_COMMAND'
-***      is_layout               = gt_alv_layout
-***      it_fieldcat             = gt_alv_fieldcat[]
-***      it_sort                 = gt_alv_sort[]
-***      i_save                  = 'A'  "Mostra botoes de gravar layout
-***      i_default               = 'X'
-***      is_print                = gt_alv_print
-***      i_screen_start_column   = 0
-***      i_screen_start_line     = 0
-***      i_screen_end_column     = 0
-***      i_screen_end_line       = 0
-***    tables
-***      t_outtab                = <fs_table>
-***    exceptions
-***      program_error           = 1
-***      others                  = 2.
-***
-***endform.                    " exibe_relatorio
-****---------------------------------------------------------------------*
-****       FORM F_STATUS_SET                                            *
-****---------------------------------------------------------------------*
-***form f_status_set using extab type slis_t_extab.            "#EC CALLED
-***
-***  clear extab.
-***
-***  set pf-status 'STANDARD' excluding extab.
-***
-***endform.                    " F_STATUS_SET
-****
-*****&---------------------------------------------------------------------*
-*****&      Form  F_USER_COMMAND
-*****&---------------------------------------------------------------------*
-****form f_user_command using ucomm    like sy-ucomm            "#EC *
-****      selfield type slis_selfield.                          "#EC *
-****
-****  data: v_trkorr like e070-trkorr.
-****
-****  if sy-ucomm = 'REFRESH'.
-****    set screen 0.
-****    leave list-processing .
-****    perform executar_relatorio.
-****  elseif ucomm = '&IC1'.
-****    if not selfield-value is initial.
-****      v_trkorr = selfield-value.
-****      call function 'TR_LOG_OVERVIEW_REQUEST_REMOTE'
-****        EXPORTING
-****          iv_trkorr = v_trkorr.
-****    endif.
-****  endif.
-****
-****endform.                    " F_USER_COMMAND
-****&---------------------------------------------------------------------*
-****&      Form  CRIA_TABELA
-****&---------------------------------------------------------------------*
-****       text
-****----------------------------------------------------------------------*
-****  -->  p1        text
-****  <--  p2        text
-****----------------------------------------------------------------------*
-***form f_cria_tabela .
-****
-****  field-symbols:
-****    <fs_line>  type any .
-****
-***** Limpando objetos
-****  unassign: <fs_table>, <fs_line>. "<fs_field>.
-****
-****  refresh:  gt_fieldcatalog .
-****  clear:    gs_fieldcatalog, gt_new_table .
-****
-****  perform f_cria_coluna using: 'TRKORR'      20  'E071' 'TRKORR',
-*****                              ''AS4POS'      6   'E071' 'AS4POS',
-*****                              'PGMID'       4   'E071' 'PGMID',
-*****                              'OBJECT'      4   'E071' 'OBJECT',
-*****                              'OBJNAME'     120 'E071' 'OBJ_NAME',
-****                               'AS4USER'     12  'E070' 'AS4USER',
-****                               'AS4DATE'     8   'E070' 'AS4DATE',
-****                               'AS4TIME'     6   'E070' 'AS4TIME',
-****                               'TRFUNCTION'  42  ''     '',
-****                               'TRSTATUS'    60  ''     '',
-****                               'KORRDEV'     4   'E070' 'KORRDEV',
-*****                              'TRKORRTASK'  20  'E070' 'TRKORR',
-*****                              'AS4USERTASK' 12  'E070' 'AS4USER',
-****                               'DESCREQ'     60  'E07T' 'AS4TEXT',
-*****                              'DESCTASK'    60  'E07T' 'AS4TEXT',
-****                               'DTECP'       10  'SYST' 'DATUM',
-****                               'TMECP'       6   'SYST' 'UZEIT'.
-****
-****  loop at s_amb.
-****    perform f_cria_coluna using: s_amb-low 10 '' '' .
-****  endloop.
-****
-***** Cria Campos
-****  call method cl_alv_table_create=>create_dynamic_table
-****    exporting
-****      it_fieldcatalog           = gt_fieldcatalog
-****    importing
-****      ep_table                  = gt_new_table
-****    exceptions
-****      generate_subpool_dir_full = 1
-****      others                    = 2.
-****
-****  if sy-subrc eq 0.
-****
-*****   Cria uma field-symbol como Tabela Interna
-****    assign gt_new_table->* to <fs_table>.
-****    create data gs_new_line like line of <fs_table>.
-****
-*****   Cria uma field-symbol como Work Area
-****    assign gs_new_line->* to <fs_line>.
-****
-*****    perform f_monta_relatorio.
-****
-****  endif.
-***endform.                    " CRIA_TABELA
-****&---------------------------------------------------------------------*
-****&      Form  F_MONTA_RELATORIO
-****&---------------------------------------------------------------------*
-****       text
-****----------------------------------------------------------------------*
-****  -->  p1        text
-****  <--  p2        text
-****----------------------------------------------------------------------*
-***form f_monta_relatorio .
-***
-****  data:
-****    ls_ctslg_cofile    type ctslg_system,
-****    lv_qtd_task        type n length 4,
-****    lv_qtd_cont        type n length 4,
-****    lv_systemid        like tstrfcofil-tarsystem,
-****    lv_linhas          type n length 4,
-****    lv_controla_transp type c,
-****    lv_ult_reg         type i,
-****    gv_nao_gera        type c length 1.
-****
-****  field-symbols:
-****    <fs_line>  type any,
-****    <fs_field> type any.
-****
-****  assign gs_new_line->* to <fs_line> .
-****
-****  loop at gt_e070 into gs_e070 .
-****
-****    clear: lv_controla_transp, gs_cofile.
-****
-****    e_settings-point_to_missing_steps = 'X'.
-****    e_settings-detailed_depiction     = 'X'.
-****
-****    call function 'TR_READ_GLOBAL_INFO_OF_REQUEST'
-****      exporting
-****        iv_trkorr   = gs_e070-trkorr
-****        iv_dir_type = 'T'
-****        is_settings = e_settings
-****      importing
-****        es_cofile   = gs_cofile.
-****
-****    clear gv_nao_gera.
-****
-****    loop at s_amb.
-****
-****
-*****     De acordo com a proposta de nova logica, será colocado o icone com farol apagado
-*****     caso ainda não tenha a opção de importação no historico da request.
-*****     Caso tenho ao menos 1 warning, será o farol amarelo
-*****     Caso tenho ao menos 1 erro, será o farol vermelho
-****
-****      lv_systemid = s_amb-low.
-*****     Ordenando de acordo com o Sistema
-****      sort gs_cofile-systems ascending by systemid.
-*****     Iniciando variaveis
-****      clear: ls_ctslg_cofile, gs_actions, gs_steps.
-*****     Buscando log espeficico de cada Sistema
-****      read table gs_cofile-systems into ls_ctslg_cofile
-****                                   with key systemid = lv_systemid
-****                                   binary search.
-****      if  sy-subrc eq 0 .
-*****       Ordenando de acordo com o retorno.
-*****       Cada ação de importação da request tem um retorno.
-****        sort ls_ctslg_cofile-steps ascending by rc.
-****
-*****       Verificando se houve algum erro
-****        read table ls_ctslg_cofile-steps into gs_steps
-****                                         with key rc = 8 binary search.
-****        if sy-subrc eq 0 .
-****          assign component lv_systemid of structure <fs_line> to <fs_field>.
-****          <fs_field> = icon_led_red.
-****        else.
-*****         Verificando se houve algum warning
-****          read table ls_ctslg_cofile-steps into gs_steps
-****                                           with key rc = 4 binary search.
-****          if sy-subrc eq 0 .
-****            assign component lv_systemid of structure <fs_line> to <fs_field>.
-****            <fs_field> = icon_led_yellow.
-****          else.
-*****           Verifica a opção de Exportação (significa que é sistema de origem DEV)
-****            read table ls_ctslg_cofile-steps into gs_steps
-****                                             with key stepid = 'E' .
-****            if sy-subrc eq 0 .
-****              assign component lv_systemid of structure <fs_line> to <fs_field>.
-****              <fs_field> = icon_led_green.
-****            else.
-*****             Verificando se a opção Importação esta aplicada
-****              read table ls_ctslg_cofile-steps into gs_steps
-****                                               with key stepid = 'I' .
-****              if sy-subrc eq 0 .
-****                assign component lv_systemid of structure <fs_line> to <fs_field>.
-****                <fs_field> = icon_led_green.
-****              else.
-****                assign component lv_systemid of structure <fs_line> to <fs_field>.
-****                <fs_field> = icon_wd_radio_button_empty.
-****              endif.
-****            endif.
-****          endif.
-****        endif.
-****      else.
-****        assign component lv_systemid of structure <fs_line> to <fs_field>.
-****        <fs_field> = icon_wd_radio_button_empty.
-****      endif.
-****
-****      describe table ls_ctslg_cofile-steps lines lv_ult_reg.
-****      read table ls_ctslg_cofile-steps into gs_steps index lv_ult_reg.
-****      read table gs_steps-actions into gs_actions index 1 .
-****
-****      if  sy-subrc eq 0 .
-****        if not gs_actions-date in s_dtecp.
-****          gv_nao_gera = 'X'.
-****          continue.
-****        endif.
-****        assign component 'DTECP' of structure <fs_line> to <fs_field>.
-****        <fs_field> = gs_actions-date.
-****        assign component 'TMECP' of structure <fs_line> to <fs_field>.
-****        <fs_field> = gs_actions-time.
-****      else.
-****        if not s_dtecp[] is initial.
-****          gv_nao_gera = 'X'.
-****        endif.
-****        assign component 'DTECP' of structure <fs_line> to <fs_field>.
-****        clear: <fs_field>.
-****        assign component 'TMECP' of structure <fs_line> to <fs_field>.
-****        clear: <fs_field>.
-****      endif.
-****    endloop.
-****
-****    check gv_nao_gera is initial.
-****
-****    clear gs_tipo.
-****    read table gt_tipo into gs_tipo
-****                       with key tipo = gs_e070-trfunction
-****                       binary search.
-****
-****    if sy-subrc eq 0 .
-****      assign component 'TRFUNCTION' of structure <fs_line> to <fs_field>.
-****      <fs_field> = gs_tipo-desc.
-****    endif.
-****
-****    clear gs_status .
-****    read table gt_status into gs_status
-****                         with key status = gs_e070-trstatus
-****                         binary search.
-****    if sy-subrc eq 0 .
-****      assign component 'TRSTATUS' of structure <fs_line> to <fs_field>.
-****      <fs_field> = gs_status-descr.
-****      assign component 'KORRDEV' of structure <fs_line> to <fs_field>.
-****      <fs_field> = gs_e070-korrdev.
-****    endif.
-****
-******* Descrição da Request
-****    clear gs_e07t.
-****    read table gt_e07t into gs_e07t
-****                       with key trkorr = gs_e070-trkorr .
-****    if sy-subrc eq 0 .
-****      assign component 'DESCREQ' of structure <fs_line> to <fs_field>.
-****      <fs_field> = gs_e07t-as4text.
-****    endif.
-****
-****    assign component 'TRKORR' of structure <fs_line> to <fs_field>.
-****    <fs_field> = gs_e070-trkorr.
-****    assign component 'AS4USER' of structure <fs_line> to <fs_field>.
-****    <fs_field> = gs_e070-as4user.
-****    assign component 'AS4DATE' of structure <fs_line> to <fs_field>.
-****    <fs_field> = gs_e070-as4date.
-****    assign component 'AS4TIME' of structure <fs_line> to <fs_field>.
-****    <fs_field> = gs_e070-as4time.
-****
-****    insert <fs_line> into table <fs_table>.
-****  endloop.
-***
-***endform.                    " F_MONTA_RELATORIO
-***
-****&---------------------------------------------------------------------*
-****&      Form  F_CRIA_COLUNA
-****&---------------------------------------------------------------------*
-****       text
-****----------------------------------------------------------------------*
-****      -->P_FIELDNAME  text
-****      -->P_OUTPUTLEN  text
-****      -->P_REF_TABLE  text
-****      -->P_REF_FIELD  text
-****----------------------------------------------------------------------*
-***form f_cria_coluna  using    p_fieldname
-***                             p_outputlen
-***                             p_ref_table
-***                             p_ref_field.
-***
-***  data: ls_fieldcatalog like line of gt_fieldcatalog .
-***
-***  ls_fieldcatalog-fieldname = p_fieldname .
-***  ls_fieldcatalog-outputlen = p_outputlen .
-***  ls_fieldcatalog-ref_table = p_ref_table .
-***  ls_fieldcatalog-ref_field = p_ref_field .
-***
-***  append ls_fieldcatalog to gt_fieldcatalog.
-***  clear  ls_fieldcatalog.
-***
-***endform.                    " F_CRIA_COLUNA
-
-
-
 *----------------------------------------------------------------------*
 *       CLASS lcl_report IMPLEMENTATION
 *----------------------------------------------------------------------*
@@ -770,25 +261,13 @@ class lcl_report implementation.
   method initial .
 
     data:
-      ls_status type ty_r_status,
-      ls_data   type admpn_ti_mfrpn_range,
-      ls_sysnam type ty_r_sysnam.
+      ls_status  type ty_r_status,
+*     ls_data    type admpn_ti_mfrpn_range,
+      ls_sysnam  type ty_r_sysnam,
+      ls_tmscsys type ty_tmscsys.
 
     refresh:
-      ambiente, status, data .
-
-    ls_status-sign   = 'I' .
-    ls_status-option = 'EQ' .
-    ls_status-low    = 'R' .
-    append ls_status to status .
-    clear  ls_status .
-
-    ls_data-sign   = 'I' .
-    ls_data-option = 'EQ' .
-    ls_data-low    = sy-datum .
-    append ls_data to data .
-    clear  ls_data .
-
+      ambiente .
 
     select domnam sysnam limbo
       into table t_tmscsys
@@ -796,11 +275,11 @@ class lcl_report implementation.
 
     if sy-subrc eq 0 .
 
-      loop at t_tmscsys into wa_tmscsys .
+      loop at t_tmscsys into ls_tmscsys .
 
         ls_sysnam-sign = 'I' .
         ls_sysnam-option = 'EQ' .
-        ls_sysnam-low = wa_tmscsys-sysnam .
+        ls_sysnam-low = ls_tmscsys-sysnam .
         append ls_sysnam to ambiente .
         clear  ls_sysnam .
 
@@ -817,28 +296,17 @@ class lcl_report implementation.
 
     data:
       gt_e070   type table of e070,
-*      gs_e070    type          e070,
-*      gt_e070_2  type table of e070,
-*      gs_e070_2  type          e070,
-      gt_e071   type table of e071,
-*      gs_e071    type          e071,
-*      gt_e071_2  type table of e071,
-*      gs_e071_2  type          e071,
+*     gt_e071   type table of e071,
       gt_e07t   type table of e07t,
-*      gs_e07t    type          e07t,
       gt_status type table of ty_status,
-*      gs_status  type          ty_status,
-      gt_tipo   type table of ty_tipo.
-*      gs_tipo    type          ty_tipo,
-
-*      gs_steps   type ctslg_step,
-*      gs_actions type ctslg_action.
+      gt_tipo   type table of ty_tipo,
+      lt_table  type ref to data.
 
 *   perform f_limpa_dados .
     me->limpar_dados(
       changing
         e070    = gt_e070
-        e071    = gt_e071 "#verificar essa utilização
+*       e071    = gt_e071
         e07t    = gt_e07t
         status  = gt_status
         tipo    = gt_tipo
@@ -868,8 +336,8 @@ class lcl_report implementation.
 
 **   perform f_cria_tabela .
 *    me->cria_tabela(
-*      changing
-*        table = table
+*      importing
+*        table = lt_table
 *    ).
 
 *   perform f_monta_relatorio .
@@ -879,6 +347,7 @@ class lcl_report implementation.
         tipo   = gt_tipo
         status = gt_status
         e07t   = gt_e07t
+        table  = table
     ).
 
 
@@ -889,13 +358,23 @@ class lcl_report implementation.
     data:
       column  type ref to cl_salv_column_list,
       columns type ref to cl_salv_columns_table.
+    field-symbols:
+      <table> type standard table .
+
+
+    if table is not initial .
+      assign table->* to <table>.
+    endif .
+
+    check <table> is assigned .
+
 
     try.
         call method cl_salv_table=>factory
           importing
             r_salv_table = lo_table
           changing
-            t_table      = <fs_table>[].
+            t_table      = <table>.
 
 
         lo_events = lo_table->get_event( ).
@@ -949,10 +428,10 @@ class lcl_report implementation.
 
         lo_table->display( ).
 
-      catch cx_salv_msg.             " cl_salv_table=>factory()
-        write: / 'cx_salv_msg exception'.
-      catch cx_salv_not_found.       " cl_salv_columns_table->get_column()
-        write: / 'cx_salv_not_found exception'.
+      catch cx_salv_msg .
+      catch cx_salv_not_found .
+      catch cx_salv_existing .
+      catch cx_salv_data_error .
       catch  cx_salv_object_not_found .
     endtry.
 
@@ -961,7 +440,7 @@ class lcl_report implementation.
   method limpar_dados .
 
     free:
-      e070, e071, e07t, status, tipo .
+      e070, e07t, status, tipo .
 
   endmethod .
 
@@ -1241,25 +720,18 @@ class lcl_report implementation.
         it_fieldcatalog           = lt_fieldcat
 *       i_length_in_byte          =     " Boolean Variable (X=True, Space=False)
       importing
-        ep_table                  = gt_new_table
+*       ep_table                  = new_table
+        ep_table                  = table
 *       e_style_fname             =     " ALV Control: Field Name of Internal Table Field
       exceptions
         generate_subpool_dir_full = 1
         others                    = 2.
+
     if sy-subrc eq 0 .
 
-*     Cria uma field-symbol como Tabela Interna
-      assign gt_new_table->* to <fs_table>.
-      create data gs_new_line like line of <fs_table>.
-
-*     Cria uma field-symbol como Work Area
-      assign gs_new_line->* to <fs_line>.
-
     else .
-*     message id sy-msgid type sy-msgty number sy-msgno
-*                with sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
-    endif.
 
+    endif.
 
   endmethod .
 
@@ -1279,6 +751,7 @@ class lcl_report implementation.
       ls_steps           type ctslg_step,
       ultimo_registro    type i,
       ls_action          type ctslg_action,
+      new_line           type ref to data,
 
       lv_qtd_task        type n length 4,
       lv_qtd_cont        type n length 4,
@@ -1287,14 +760,22 @@ class lcl_report implementation.
       gv_nao_gera        type c length 1.
 
     field-symbols:
-      <fs_line>  type any,
-      <fs_field> type any.
+      <table> type standard table,
+      <line>  type any,
+      <field> type any.
 
+    if table is not initial .
+      assign table->* to <table>.
+      if <table> is assigned .
+        create data new_line like line of <table>.
+        assign new_line->* to <line>.
+      endif .
+    endif .
 
     settings-point_to_missing_steps = abap_on .
     settings-detailed_depiction     = abap_on .
 
-    assign gs_new_line->* to <fs_line> .
+    assign new_line->* to <line> .
 
     loop at e070 into ls_e070 .
 
@@ -1337,40 +818,40 @@ class lcl_report implementation.
                                       with key rc = 8
                                       binary search.
           if sy-subrc eq 0 .
-            assign component systemid of structure <fs_line> to <fs_field>.
-            <fs_field> = icon_led_red.
+            assign component systemid of structure <line> to <field>.
+            <field> = icon_led_red.
           else.
 *         Verificando se houve algum warning
             read table ls_systems-steps into ls_steps
                                         with key rc = 4
                                         binary search .
             if sy-subrc eq 0 .
-              assign component systemid of structure <fs_line> to <fs_field>.
-              <fs_field> = icon_led_yellow.
+              assign component systemid of structure <line> to <field>.
+              <field> = icon_led_yellow.
             else.
 *           Verifica a opção de Exportação (significa que é sistema de origem DEV)
               read table ls_systems-steps into ls_steps
                                           with key stepid = 'E' .
               if sy-subrc eq 0 .
-                assign component systemid of structure <fs_line> to <fs_field>.
-                <fs_field> = icon_led_green.
+                assign component systemid of structure <line> to <field>.
+                <field> = icon_led_green.
               else.
 *             Verificando se a opção Importação esta aplicada
                 read table ls_systems-steps into ls_steps
                                             with key stepid = 'I' .
                 if sy-subrc eq 0 .
-                  assign component systemid of structure <fs_line> to <fs_field>.
-                  <fs_field> = icon_led_green.
+                  assign component systemid of structure <line> to <field>.
+                  <field> = icon_led_green.
                 else.
-                  assign component systemid of structure <fs_line> to <fs_field>.
-                  <fs_field> = icon_wd_radio_button_empty.
+                  assign component systemid of structure <line> to <field>.
+                  <field> = icon_wd_radio_button_empty.
                 endif.
               endif.
             endif.
           endif.
         else.
-          assign component systemid of structure <fs_line> to <fs_field>.
-          <fs_field> = icon_wd_radio_button_empty.
+          assign component systemid of structure <line> to <field>.
+          <field> = icon_wd_radio_button_empty.
         endif.
 
         describe table ls_systems-steps lines ultimo_registro .
@@ -1385,10 +866,10 @@ class lcl_report implementation.
 **            continue.
 **          endif.
 
-          assign component 'DTECP' of structure <fs_line> to <fs_field>.
-          <fs_field> = ls_action-date.
-          assign component 'TMECP' of structure <fs_line> to <fs_field>.
-          <fs_field> = ls_action-time.
+          assign component 'DTECP' of structure <line> to <field>.
+          <field> = ls_action-date.
+          assign component 'TMECP' of structure <line> to <field>.
+          <field> = ls_action-time.
 
         else.
 
@@ -1396,10 +877,10 @@ class lcl_report implementation.
 **            gv_nao_gera = 'X'.
 **          endif.
 
-          assign component 'DTECP' of structure <fs_line> to <fs_field>.
-          clear: <fs_field>.
-          assign component 'TMECP' of structure <fs_line> to <fs_field>.
-          clear: <fs_field>.
+          assign component 'DTECP' of structure <line> to <field>.
+          clear: <field>.
+          assign component 'TMECP' of structure <line> to <field>.
+          clear: <field>.
 
         endif.
 
@@ -1412,8 +893,8 @@ class lcl_report implementation.
         binary search.
 
       if sy-subrc eq 0 .
-        assign component 'TRFUNCTION' of structure <fs_line> to <fs_field>.
-        <fs_field> = ls_tipo-desc.
+        assign component 'TRFUNCTION' of structure <line> to <field>.
+        <field> = ls_tipo-desc.
       endif.
 
       read table status into ls_status
@@ -1421,8 +902,8 @@ class lcl_report implementation.
         binary search.
 
       if sy-subrc eq 0 .
-        assign component 'TRSTATUS' of structure <fs_line> to <fs_field>.
-        <fs_field> = ls_status-descr.
+        assign component 'TRSTATUS' of structure <line> to <field>.
+        <field> = ls_status-descr.
 *       assign component 'KORRDEV' of structure <fs_line> to <fs_field>.
 *       <fs_field> = ls_status-korrdev.
       endif.
@@ -1432,22 +913,27 @@ class lcl_report implementation.
         with key trkorr = ls_e070-trkorr .
 
       if sy-subrc eq 0 .
-        assign component 'DESCREQ' of structure <fs_line> to <fs_field>.
-        <fs_field> = ls_e07t-as4text.
+        assign component 'DESCREQ' of structure <line> to <field>.
+        <field> = ls_e07t-as4text.
       endif.
 
-      assign component 'TRKORR' of structure <fs_line> to <fs_field>.
-      <fs_field> = ls_e070-trkorr.
-      assign component 'AS4USER' of structure <fs_line> to <fs_field>.
-      <fs_field> = ls_e070-as4user.
-      assign component 'AS4DATE' of structure <fs_line> to <fs_field>.
-      <fs_field> = ls_e070-as4date.
-      assign component 'AS4TIME' of structure <fs_line> to <fs_field>.
-      <fs_field> = ls_e070-as4time.
+      assign component 'TRKORR' of structure <line> to <field>.
+      <field> = ls_e070-trkorr.
+      assign component 'AS4USER' of structure <line> to <field>.
+      <field> = ls_e070-as4user.
+      assign component 'AS4DATE' of structure <line> to <field>.
+      <field> = ls_e070-as4date.
+      assign component 'AS4TIME' of structure <line> to <field>.
+      <field> = ls_e070-as4time.
 
-      insert <fs_line> into table <fs_table>.
+      insert <line> into table <table>.
 
     endloop.
+
+    if lines( <table>[] ) eq 0 .
+    else .
+      append lines of <table> to outtab .
+    endif .
 
   endmethod .
 
@@ -1491,8 +977,6 @@ class lcl_report implementation.
       column      type ref to cl_salv_column_list,
       columns     type ref to cl_salv_columns_table.
 
-    break abap00 .
-
     columns = table->get_columns( ).
 
     loop at t_tmscsys into line .
@@ -1521,24 +1005,41 @@ class lcl_report implementation.
   method link_click .
 
     data:
-      vl_trkorr type trkorr .
+      trkorr type trkorr .
 
     field-symbols:
-      <fs_line>  type any,
-      <fs_field> type any.
+      <table> type standard table,
+      <line>  type any,
+      <field> type any.
 
-    read table <fs_table> assigning <fs_line> index row .
-    if sy-subrc eq 0 .
-      assign component 'TRKORR' of structure <fs_line> to <fs_field>.
-      if <fs_field> is assigned .
-        move <fs_field> to vl_trkorr .
-        call function 'TR_LOG_OVERVIEW_REQUEST_REMOTE'
-          exporting
-            iv_trkorr = vl_trkorr
-*           iv_dirtype             =
-*           iv_without_check       = ' '
-          .
+    if table is not initial .
+
+      assign table->* to <table>.
+
+      if <table> is assigned .
+
+        read table <table> assigning <line> index row .
+
+        if sy-subrc eq 0 .
+
+          assign component 'TRKORR' of structure <line> to <field>.
+
+          if <field> is assigned .
+
+            trkorr = <field>  .
+
+            call function 'TR_LOG_OVERVIEW_REQUEST_REMOTE'
+              exporting
+                iv_trkorr = trkorr
+*               iv_dirtype             =
+*               iv_without_check       = ' '
+              .
+          endif.
+
+        endif.
+
       endif.
+
     endif.
 
   endmethod .
@@ -1582,6 +1083,16 @@ class lcl_report implementation.
 endclass.                    "lcl_report IMPLEMENTATION
 
 
+*--------------------------------------------------------------------*
+*- Tela de seleção
+*--------------------------------------------------------------------*
+data:
+  lo_report type ref to lcl_report.
+
+* Verificar forma de mudar para entro do método
+field-symbols:
+  <table> type standard table .
+
 
 *--------------------------------------------------------------------*
 *- Tela de seleção
@@ -1591,10 +1102,10 @@ selection-screen begin of block b1 with frame title text-001.
 select-options: s_amb for trtarget-tarsystem no intervals obligatory,
                 p_ordem for  e070-trkorr,
                 p_tipo  for  e070-trfunction,
-                p_stat  for  e070-trstatus,
+                p_stat  for  e070-trstatus default 'R',
                 p_categ for  e070-korrdev,
-                p_user  for  e070-as4user,
-                p_data  for  e070-as4date,
+                p_user  for  e070-as4user default sy-uname ,
+                p_data  for  e070-as4date default sy-datum ,
                 s_dtecp for  e070-as4date.
 selection-screen end of block b1.
 
@@ -1606,17 +1117,14 @@ initialization.
   lcl_report=>initial(
     changing
       ambiente = s_amb[]
-      status   = p_stat[]
-      data     = p_data[]
   ).
 
 
 start-of-selection .
 
-  data: lo_report type ref to lcl_report.
-
   create object lo_report.
 
+  lo_report->cria_tabela( ).
 
   lo_report->get_data(
     exporting
@@ -1630,7 +1138,7 @@ start-of-selection .
       data_produca = s_dtecp[]
   ).
 
-  lo_report->generate_output( t_tmscsys = it_tmscsys ).
-
 
 end-of-selection.
+
+  lo_report->generate_output( ) .
