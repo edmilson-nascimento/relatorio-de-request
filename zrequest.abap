@@ -10,51 +10,12 @@ report zteste message-id >0 ..
 *& Report  ZREQUEST
 *&
 *&---------------------------------------------------------------------*
-*& 1 - Atribuição de valores para paramantro de ambiente
-*& 2 - Alteração na forma de atribuição dos faróis de transpote
-*&   -> Verificar se existe algum log de transporte (icon empty)
-*&   -> Verificar se existe algum log de error (icon red)
-*&   -> Verificar se existe algum log de warning (icon yellow)
-*&   -> Verificar se existe algum log do id Exportação (ambiente de origem,
-*&      supostamente o ambiente de qualidade (icon green)
-*&   -> Verificar se existe algum log do id Importação (icon green)
-*& 3 - Alteração nomeclatura de variaveis
-*& 4 - Atualização de declarações de tabelas de tipos
-*& 4 - Alteração do ALV de exibição com opção de refresh (em desenvol)
-
-
-
-* obs: Form monta_relatorio - verificar se variaveis globais podem ser locais
-* obs: Form f_cria_tabela - verificar nomeclatura
-* obs: Verificar ordenação por: data, hora e request
-*&---------------------------------------------------------------------*
-
-*report  zrequest  no standard page heading line-size 200 message-id >0 .
-
-*--------------------------------------------------------------------*
-*- Includes
-*--------------------------------------------------------------------*
-include <icon>.
-
-*--------------------------------------------------------------------*
-*- Tipos SAP
-*--------------------------------------------------------------------*
-type-pools:
-  vrm, slis, ctslg, kkblo, icon, sym .
 
 *--------------------------------------------------------------------*
 *- Tabelas
 *--------------------------------------------------------------------*
 tables:
   e070, trtarget.
-
-types:
-  begin of ty_tmscsys,
-    domnam type tmscsys-domnam,
-    sysnam type tmscsys-sysnam,
-    limbo  type tmscsys-limbo,
-  end of ty_tmscsys .
-
 
 *----------------------------------------------------------------------*
 *       CLASS lcl_report DEFINITION
@@ -85,6 +46,13 @@ class lcl_report definition.
       end of ty_tipo,
 
       tipo_tab type table of ty_tipo,
+
+      begin of ty_categoria,
+        categoria type trfunction,
+        desc      type c length 60,
+      end of ty_categoria,
+
+      categoria_tab type table of ty_categoria,
 
       begin of ty_r_sysnam,
         sign   type ddsign,
@@ -119,7 +87,9 @@ class lcl_report definition.
       changing
         ambiente type r_sysnam .
 
-    methods cria_tabela .
+    methods cria_tabela
+      importing
+        !ambiente type r_sysnam .
 
     methods get_data
       importing
@@ -134,41 +104,6 @@ class lcl_report definition.
 
 
     methods generate_output .
-
-
-    class-methods on_before_salv_function         " BEFORE_SALV_FUNCTION
-      for event if_salv_events_functions~before_salv_function
-                  of cl_salv_events_table
-      importing e_salv_function.
-
-    class-methods on_after_salv_function          " AFTER_SALV_FUNCTION
-      for event if_salv_events_functions~before_salv_function
-                  of cl_salv_events_table
-      importing e_salv_function.
-
-    class-methods on_added_function               " ADDED_FUNCTION
-      for event if_salv_events_functions~added_function
-                  of cl_salv_events_table
-      importing e_salv_function.
-
-    class-methods on_top_of_page                  " TOP_OF_PAGE
-      for event if_salv_events_list~top_of_page
-                  of cl_salv_events_table
-      importing r_top_of_page
-                  page
-                  table_index.
-
-    class-methods on_end_of_page                  " END_OF_PAGE
-      for event if_salv_events_list~end_of_page
-                  of cl_salv_events_table
-      importing r_end_of_page
-                  page.
-
-    class-methods on_double_click                 " DOUBLE_CLICK
-      for event if_salv_events_actions_table~double_click
-                  of cl_salv_events_table
-      importing row
-                  column.
 
 
   protected section .
@@ -194,8 +129,9 @@ class lcl_report definition.
 
     methods carrega_descricao
       changing
-        !status type status_tab
-        !tipo   type tipo_tab .
+        !tipo      type tipo_tab
+        !status    type status_tab
+        !categoria type categoria_tab .
 
     methods seleciona_dados
       importing
@@ -220,13 +156,14 @@ class lcl_report definition.
 
     methods monta_relatorio
       importing
-        !e070   type e070_t
-        !tipo   type tipo_tab
-        !status type status_tab
-        !e07t   type e07t_t
-        !table  type ref to data
+        !e070      type e070_t
+        !status    type status_tab
+        !tipo      type tipo_tab
+        !categoria type categoria_tab
+        !e07t      type e07t_t
+        !table     type ref to data
       exporting
-        !outtab type standard table .
+        !outtab    type standard table .
 
     methods set_text
       importing
@@ -249,6 +186,16 @@ class lcl_report definition.
         !row    type any
         !column type any .
 
+    methods change_tmscsys
+      importing
+        !ambiente type r_sysnam .
+
+    methods assign
+      importing
+        !field type any
+        !value type any
+      changing
+        !line  type any .
 
 endclass.                    "lcl_report DEFINITION
 
@@ -261,10 +208,12 @@ class lcl_report implementation.
   method initial .
 
     data:
-      ls_status  type ty_r_status,
-*     ls_data    type admpn_ti_mfrpn_range,
-      ls_sysnam  type ty_r_sysnam,
-      ls_tmscsys type ty_tmscsys.
+      ls_status   type ty_r_status,
+      ls_sysnam   type ty_r_sysnam,
+      ls_tmscsys  type ty_tmscsys,
+      opt_list    type sscr_opt_list,
+      ass         type sscr_ass,
+      restriction type sscr_restrict.
 
     refresh:
       ambiente .
@@ -290,37 +239,67 @@ class lcl_report implementation.
     endif.
 
 
+    opt_list-name       = 'OBJECTKEY1'.
+    opt_list-options-eq = abap_on .
+    append opt_list to restriction-opt_list_tab.
+
+    ass-kind    = 'S'.
+    ass-name    = 'S_AMB'.
+    ass-sg_main = 'I'.
+    ass-sg_addy = abap_off .
+    ass-op_main = 'OBJECTKEY1'.
+    append ass to restriction-ass_tab.
+
+    call function 'SELECT_OPTIONS_RESTRICT'
+      exporting
+*       program                =
+        restriction            = restriction
+*       db                     = SPACE
+      exceptions
+        too_late               = 1
+        repeated               = 2
+        selopt_without_options = 3
+        selopt_without_signs   = 4
+        invalid_sign           = 5
+        empty_option_list      = 6
+        invalid_kind           = 7
+        repeated_kind_a        = 8
+        others                 = 9.
+
+    if sy-subrc eq 0.
+    else .
+      message id sy-msgid type sy-msgty number sy-msgno
+            with sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+    endif.
+
+
   endmethod .
 
   method get_data.
 
     data:
-      gt_e070   type table of e070,
-*     gt_e071   type table of e071,
-      gt_e07t   type table of e07t,
-      gt_status type table of ty_status,
-      gt_tipo   type table of ty_tipo,
-      lt_table  type ref to data.
+      gt_e070      type table of e070,
+      gt_e07t      type table of e07t,
+      gt_status    type table of ty_status,
+      gt_tipo      type table of ty_tipo,
+      gt_categoria type table of ty_categoria,
+      lt_table     type ref to data.
 
-*   perform f_limpa_dados .
     me->limpar_dados(
       changing
         e070    = gt_e070
-*       e071    = gt_e071
         e07t    = gt_e07t
         status  = gt_status
         tipo    = gt_tipo
     ).
 
-
-*   perform f_carrega_descricao .
     me->carrega_descricao(
       changing
-        status = gt_status
-        tipo   = gt_tipo
+        tipo      = gt_tipo
+        status    = gt_status
+        categoria = gt_categoria
     ).
 
-*   perform f_seleciona_dados .
     me->seleciona_dados(
       exporting
         ordem     = ordem
@@ -334,18 +313,12 @@ class lcl_report implementation.
         e07t      = gt_e07t
     ).
 
-**   perform f_cria_tabela .
-*    me->cria_tabela(
-*      importing
-*        table = lt_table
-*    ).
-
-*   perform f_monta_relatorio .
     me->monta_relatorio(
       exporting
         e070   = gt_e070
-        tipo   = gt_tipo
         status = gt_status
+        tipo   = gt_tipo
+        categoria = gt_categoria
         e07t   = gt_e07t
         table  = table
     ).
@@ -379,21 +352,8 @@ class lcl_report implementation.
 
         lo_events = lo_table->get_event( ).
 
-
-
-**       instantiate the event handler object
-**        data: lo_event_handler type ref to cl_event_handler.
-**        create object lo_event_handler.
-
-*       set handler cl_event_handler=>on_before_salv_function for lo_events.
-*       set handler cl_event_handler=>on_after_salv_function for lo_events.
-        set handler lcl_report=>on_added_function for lo_events.
-*       set handler cl_event_handler=>on_top_of_page for lo_events.
-*       set handler cl_event_handler=>on_end_of_page for lo_events.
-*       set handler cl_event_handler=>on_double_click for lo_events.
         set handler me->on_link_click for lo_events.
 
-*     ALV-Toolbar
         lo_table->set_screen_status(
 *         pfstatus      = 'ZTESTE'
           pfstatus      = 'STANDARD_FULLSCREEN'
@@ -401,10 +361,9 @@ class lcl_report implementation.
           report        = 'SAPLKKBL'
           set_functions = lo_table->c_functions_all ).
 
-*     Set column as hotspot
+
         columns = lo_table->get_columns( ).
 
-*     Otimizando largura das colunas
         columns->set_optimize( 'X' ).
         column ?= columns->get_column( 'TRKORR' ).
         column->set_cell_type( if_salv_c_cell_type=>hotspot ).
@@ -435,7 +394,7 @@ class lcl_report implementation.
       catch  cx_salv_object_not_found .
     endtry.
 
-  endmethod .                    "generate_output
+  endmethod .
 
   method limpar_dados .
 
@@ -447,10 +406,31 @@ class lcl_report implementation.
   method carrega_descricao .
 
     data:
-      lt_list   type table of vrm_value,
-      ls_list   type          vrm_value,
-      ls_status type ty_status,
-      ls_tipo   type ty_tipo.
+      lt_list      type table of vrm_value,
+      ls_list      type          vrm_value,
+      ls_tipo      type ty_tipo,
+      ls_status    type ty_status,
+      ls_categoria type ty_categoria.
+
+    call function 'FICO_DOMAIN_VALUES_GET'
+      exporting
+        i_table_name = 'E070'
+        i_field_name = 'TRFUNCTION'
+        i_langu      = sy-langu
+      importing
+        e_t_list     = lt_list.
+
+    loop at lt_list into ls_list .
+      ls_tipo-tipo = ls_list-key .
+      ls_tipo-desc = ls_list-text .
+      append ls_tipo to tipo .
+      clear  ls_tipo .
+    endloop.
+
+    sort tipo ascending by tipo.
+
+    refresh lt_list .
+    clear   ls_list .
 
     call function 'FICO_DOMAIN_VALUES_GET'
       exporting
@@ -475,19 +455,23 @@ class lcl_report implementation.
     call function 'FICO_DOMAIN_VALUES_GET'
       exporting
         i_table_name = 'E070'
-        i_field_name = 'TRFUNCTION'
+        i_field_name = 'KORRDEV'
         i_langu      = sy-langu
       importing
         e_t_list     = lt_list.
 
-    loop at lt_list into ls_list .
-      ls_tipo-tipo = ls_list-key .
-      ls_tipo-desc = ls_list-text .
-      append ls_tipo to tipo .
-      clear  ls_tipo .
+    loop at lt_list into ls_list.
+      ls_categoria-categoria = ls_list-key .
+      ls_categoria-desc      = ls_list-text .
+      append ls_categoria to categoria .
+      clear  ls_categoria .
     endloop.
 
-    sort tipo ascending by tipo.
+    sort categoria ascending by categoria .
+
+    refresh lt_list .
+    clear   ls_list .
+
 
   endmethod .
 
@@ -535,11 +519,7 @@ class lcl_report implementation.
     field-symbols:
       <fs_line>  type any .
 
-
-*    unassign: <fs_table>, <fs_line>. "<fs_field>.
-*
-*    refresh:  gt_fieldcatalog .
-*    clear:    gs_fieldcatalog, gt_new_table .
+    me->change_tmscsys( ambiente = ambiente ).
 
     me->cria_coluna(
       exporting
@@ -626,9 +606,9 @@ class lcl_report implementation.
     me->cria_coluna(
       exporting
         fieldname    = 'TRSTATUS'
-        outputlen    = 60
-        ref_table    = ''
-        ref_field    = ''
+        outputlen    = 1
+        ref_table    = 'E070'
+        ref_field    = 'TRSTATUS'
       changing
         fieldcatalog = lt_fieldcat
     ).
@@ -641,6 +621,16 @@ class lcl_report implementation.
       changing
         fieldcatalog = lt_fieldcat
     ).
+    me->cria_coluna(
+      exporting
+        fieldname    = 'KORRDEV_TEXT'
+        outputlen    = 4
+        ref_table    = 'DD07D'
+        ref_field    = 'DDTEXT'
+      changing
+        fieldcatalog = lt_fieldcat
+    ).
+
 *    me->cria_coluna(
 *      exporting
 *        fieldname    = 'TRKORRTASK'
@@ -741,8 +731,9 @@ class lcl_report implementation.
     data:
       ls_tmscys          type ty_tmscsys,
       ls_e070            type e070,
-      ls_tipo            type ty_tipo,
       ls_status          type ty_status,
+      ls_tipo            type ty_tipo,
+      ls_categoria       type ty_categoria,
       ls_e07t            type e07t,
       settings           type ctslg_settings,
       systemid           type tstrfcofil-tarsystem,
@@ -860,22 +851,12 @@ class lcl_report implementation.
 
         if  sy-subrc eq 0 .
 
-***         Verificar esse filtro de data para transporte em produção
-**          if not ls_action-date in s_dtecp.
-**            gv_nao_gera = 'X'.
-**            continue.
-**          endif.
-
           assign component 'DTECP' of structure <line> to <field>.
           <field> = ls_action-date.
           assign component 'TMECP' of structure <line> to <field>.
           <field> = ls_action-time.
 
         else.
-
-**          if not s_dtecp[] is initial.
-**            gv_nao_gera = 'X'.
-**          endif.
 
           assign component 'DTECP' of structure <line> to <field>.
           clear: <field>.
@@ -902,12 +883,42 @@ class lcl_report implementation.
         binary search.
 
       if sy-subrc eq 0 .
-        assign component 'TRSTATUS' of structure <line> to <field>.
-        <field> = ls_status-descr.
-*       assign component 'KORRDEV' of structure <fs_line> to <fs_field>.
-*       <fs_field> = ls_status-korrdev.
+
+        me->assign(
+          exporting
+            field = 'TRSTATUS'
+            value = ls_e070-trstatus
+          changing
+            line  = <line>
+        ).
+*        assign component 'TRSTATUS' of structure <line> to <field>.
+*        <field> = ls_status-descr.
+
       endif.
 
+      read table categoria into ls_categoria
+        with key categoria = ls_e070-korrdev
+        binary search .
+
+      if sy-subrc eq 0 .
+
+        me->assign(
+          exporting
+            field = 'KORRDEV'
+            value = ls_e070-korrdev
+          changing
+            line  = <line>
+        ).
+
+        me->assign(
+          exporting
+            field = 'KORRDEV_TEXT'
+            value = ls_categoria-desc
+          changing
+            line  = <line>
+        ).
+
+      endif .
 
       read table e07t into ls_e07t
         with key trkorr = ls_e070-trkorr .
@@ -1045,28 +1056,71 @@ class lcl_report implementation.
   endmethod .
 
 
-  method on_before_salv_function.
-  endmethod.                    "ON_BEFORE_SALV_FUNCTION
+  method change_tmscsys .
 
-  method on_after_salv_function.
-  endmethod.                    "ON_AFTER_SALV_FUNCTION
 
-  method on_added_function.
-    break-point .
+*   #verificar: inibir abas no parametro s_amb
 
-*   lo_report->lo_table->get_data( ).
-*   lo_report->lo_table->refresh( ).
+    data:
+      line       type ty_r_sysnam,
+      lt_tmscsys type tmscsys_tab,
+      ls_tmscsys type ty_tmscsys.
 
-  endmethod.                    "ON_ADDED_FUNCTION
+    if ambiente[] is not initial .
 
-  method on_top_of_page.
-  endmethod.                    "ON_TOP_OF_PAGE
+      do .
 
-  method on_end_of_page.
-  endmethod.                    "ON_END_OF_PAGE
+        read table ambiente into line index sy-index .
 
-  method on_double_click.
-  endmethod.                    "ON_DOUBLE_CLICK
+        if sy-subrc eq 0 .
+
+          read table t_tmscsys into ls_tmscsys
+            with key sysnam = line-low .
+
+          if sy-subrc eq 0 .
+
+            append ls_tmscsys to lt_tmscsys .
+            clear  ls_tmscsys .
+
+          endif .
+
+        else .
+          exit .
+        endif.
+
+      enddo .
+
+      if lines( lt_tmscsys ) eq 0 .
+      else .
+        refresh t_tmscsys .
+        append lines of lt_tmscsys to t_tmscsys .
+      endif .
+
+    endif .
+
+    free:
+      lt_tmscsys .
+
+  endmethod.
+
+  method assign .
+
+    field-symbols:
+      <field> type any .
+
+
+    assign component field of structure line to <field>.
+
+    if <field> is assigned .
+
+      <field> = value .
+
+      unassign
+        <field> .
+
+    endif .
+
+  endmethod .
 
   method on_link_click.
 
@@ -1076,7 +1130,6 @@ class lcl_report implementation.
         column = column
     ).
 
-*    perform f_on_link_click using row column .
   endmethod.
 
 
@@ -1088,11 +1141,6 @@ endclass.                    "lcl_report IMPLEMENTATION
 *--------------------------------------------------------------------*
 data:
   lo_report type ref to lcl_report.
-
-* Verificar forma de mudar para entro do método
-field-symbols:
-  <table> type standard table .
-
 
 *--------------------------------------------------------------------*
 *- Tela de seleção
@@ -1124,7 +1172,7 @@ start-of-selection .
 
   create object lo_report.
 
-  lo_report->cria_tabela( ).
+  lo_report->cria_tabela( ambiente = s_amb[] ).
 
   lo_report->get_data(
     exporting
