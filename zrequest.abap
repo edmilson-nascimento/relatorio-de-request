@@ -2,6 +2,12 @@
 report zteste message-id >0 .
 
 *--------------------------------------------------------------------*
+*- Tipos SAP
+*--------------------------------------------------------------------*
+type-pools:
+  sscr, vrm, ctslg, icon .
+
+*--------------------------------------------------------------------*
 *- Tabelas
 *--------------------------------------------------------------------*
 tables:
@@ -62,8 +68,6 @@ class lcl_report definition.
 
       r_status type table of ty_r_status.
 
-
-
     class-data:
       t_tmscsys  type tmscsys_tab .
 
@@ -92,7 +96,6 @@ class lcl_report definition.
         !data         type trg_date
         !data_produca type trg_date .
 
-
     methods generate_output .
 
 
@@ -100,20 +103,33 @@ class lcl_report definition.
 
     methods on_link_click
       for event if_salv_events_actions_table~link_click
-                  of cl_salv_events_table
+             of cl_salv_events_table
       importing row
-                  column.
+                column.
+
+    methods on_added_function
+      for event if_salv_events_functions~added_function
+             of cl_salv_events_table
+      importing e_salv_function.
 
   private section .
 
     data:
-      table type ref to data .
+      table          type ref to data,
+      i_ambiente     type r_sysnam,
+      i_ordem        type /gc1/tab_rng_trkorr,
+      i_tipo         type trg_char1,
+      i_status       type r_status,
+      i_categoria    type trg_char4,
+      i_usuario      type wcft_cc_sel_range_user_tab,
+      i_data         type trg_date,
+      i_data_produca type trg_date .
 
 
     methods limpar_dados
       changing
-        !e070   type e070_t
-        !e07t   type e07t_t
+        !e070   type tt_e070
+        !e07t   type tt_e07t
         !status type status_tab
         !tipo   type tipo_tab .
 
@@ -132,8 +148,8 @@ class lcl_report definition.
         !usuario   type wcft_cc_sel_range_user_tab
         !data      type trg_date
       changing
-        !e070      type e070_t
-        !e07t      type e07t_t .
+        !e070      type tt_e070
+        !e07t      type tt_e07t .
 
     methods cria_coluna
       importing
@@ -146,14 +162,25 @@ class lcl_report definition.
 
     methods monta_relatorio
       importing
-        !e070      type e070_t
+        !e070      type tt_e070
         !status    type status_tab
         !tipo      type tipo_tab
         !categoria type categoria_tab
-        !e07t      type e07t_t
+        !e07t      type tt_e07t
         !table     type ref to data
       exporting
         !outtab    type standard table .
+
+    methods atualiza_atributos
+      importing
+        !ambiente     type r_sysnam
+        !ordem        type /gc1/tab_rng_trkorr
+        !tipo         type trg_char1
+        !status       type r_status
+        !categoria    type trg_char4
+        !usuario      type wcft_cc_sel_range_user_tab
+        !data         type trg_date
+        !data_produca type trg_date .
 
     methods set_text
       importing
@@ -176,6 +203,8 @@ class lcl_report definition.
         !row    type any
         !column type any .
 
+    methods process .
+
     methods change_tmscsys
       importing
         !ambiente type r_sysnam .
@@ -186,6 +215,8 @@ class lcl_report definition.
         !value type any
       changing
         !line  type any .
+
+    methods get_data_refresh .
 
 endclass.                    "lcl_report DEFINITION
 
@@ -263,7 +294,7 @@ class lcl_report implementation.
     endif.
 
 
-  endmethod .
+  endmethod .                    "initial
 
   method get_data.
 
@@ -313,6 +344,18 @@ class lcl_report implementation.
         table  = table
     ).
 
+    me->atualiza_atributos(
+      exporting
+        ambiente     = ambiente
+        ordem        = ordem
+        tipo         = tipo
+        status       = status
+        categoria    = categoria
+        usuario      = usuario
+        data         = data
+        data_produca = data_produca
+    ) .
+
 
   endmethod.                    "GET_DATA
 
@@ -334,21 +377,21 @@ class lcl_report implementation.
 
     try.
         call method cl_salv_table=>factory
-          importing
+          IMPORTING
             r_salv_table = lo_table
-          changing
+          CHANGING
             t_table      = <table>.
 
 
         lo_events = lo_table->get_event( ).
 
         set handler me->on_link_click for lo_events.
+        set handler me->on_added_function for lo_events.
 
         lo_table->set_screen_status(
-*         pfstatus      = 'ZTESTE'
           pfstatus      = 'STANDARD_FULLSCREEN'
-*         report        = sy-cprog
-          report        = 'SAPLKKBL'
+          report        = sy-cprog
+*         report        = 'SAPLKKBL'
           set_functions = lo_table->c_functions_all ).
 
 
@@ -384,14 +427,25 @@ class lcl_report implementation.
       catch  cx_salv_object_not_found .
     endtry.
 
-  endmethod .
+  endmethod .                    "generate_output
 
   method limpar_dados .
+
+    field-symbols:
+      <table> type standard table .
 
     free:
       e070, e07t, status, tipo .
 
-  endmethod .
+    if table is not initial .
+      assign table->* to <table>.
+      if <table> is assigned .
+        refresh:
+          <table> .
+      endif .
+    endif .
+
+  endmethod .                    "limpar_dados
 
   method carrega_descricao .
 
@@ -403,11 +457,11 @@ class lcl_report implementation.
       ls_categoria type ty_categoria.
 
     call function 'FICO_DOMAIN_VALUES_GET'
-      exporting
+      EXPORTING
         i_table_name = 'E070'
         i_field_name = 'TRFUNCTION'
         i_langu      = sy-langu
-      importing
+      IMPORTING
         e_t_list     = lt_list.
 
     loop at lt_list into ls_list .
@@ -423,11 +477,11 @@ class lcl_report implementation.
     clear   ls_list .
 
     call function 'FICO_DOMAIN_VALUES_GET'
-      exporting
+      EXPORTING
         i_table_name = 'E070'
         i_field_name = 'TRSTATUS'
         i_langu      = sy-langu
-      importing
+      IMPORTING
         e_t_list     = lt_list.
 
     loop at lt_list into ls_list.
@@ -443,11 +497,11 @@ class lcl_report implementation.
     clear   ls_list .
 
     call function 'FICO_DOMAIN_VALUES_GET'
-      exporting
+      EXPORTING
         i_table_name = 'E070'
         i_field_name = 'KORRDEV'
         i_langu      = sy-langu
-      importing
+      IMPORTING
         e_t_list     = lt_list.
 
     loop at lt_list into ls_list.
@@ -463,7 +517,7 @@ class lcl_report implementation.
     clear   ls_list .
 
 
-  endmethod .
+  endmethod .                    "carrega_descricao
 
 
   method seleciona_dados .
@@ -482,6 +536,7 @@ class lcl_report implementation.
 
     endif.
 
+    delete e070 where trkorr is initial .
 
     if lines( e070 ) eq 0 .
 
@@ -496,7 +551,7 @@ class lcl_report implementation.
 
     endif.
 
-  endmethod.
+  endmethod.                    "seleciona_dados
 
 
   method cria_tabela .
@@ -713,7 +768,7 @@ class lcl_report implementation.
 
     endif.
 
-  endmethod .
+  endmethod .                    "cria_tabela
 
 
   method monta_relatorio .
@@ -764,11 +819,11 @@ class lcl_report implementation.
       clear gv_nao_gera.
 
       call function 'TR_READ_GLOBAL_INFO_OF_REQUEST'
-        exporting
+        EXPORTING
           iv_trkorr   = ls_e070-trkorr
           iv_dir_type = 'T'
           is_settings = settings
-        importing
+        IMPORTING
           es_cofile   = cofile.
 
 
@@ -936,7 +991,7 @@ class lcl_report implementation.
       append lines of <table> to outtab .
     endif .
 
-  endmethod .
+  endmethod .                    "monta_relatorio
 
 
   method cria_coluna .
@@ -952,8 +1007,59 @@ class lcl_report implementation.
     append line to fieldcatalog.
     clear  line .
 
-  endmethod.
+  endmethod.                    "cria_coluna
 
+  method atualiza_atributos .
+
+    if lines( i_ordem ) eq 0 .
+      if lines( ordem ) eq 0 .
+      else .
+        append lines of ordem to i_ordem .
+      endif .
+    else .
+    endif .
+
+    if lines( i_tipo ) eq 0 .
+      if lines( tipo ) eq 0 .
+      else .
+        append lines of tipo to i_tipo .
+      endif .
+    else .
+    endif .
+
+    if lines( i_status ) eq 0 .
+      if lines( status ) eq 0 .
+      else .
+        append lines of status to i_status .
+      endif .
+    else .
+    endif .
+
+    if lines( i_categoria ) eq 0 .
+      if lines( categoria ) eq 0 .
+      else .
+        append lines of categoria to i_categoria .
+      endif .
+    else .
+    endif .
+
+    if lines( i_usuario ) eq 0 .
+      if lines( usuario ) eq 0 .
+      else .
+        append lines of usuario to i_usuario .
+      endif .
+    else .
+    endif .
+
+    if lines( i_data ) eq 0 .
+      if lines( data ) eq 0 .
+      else .
+        append lines of data to i_data .
+      endif .
+    else .
+    endif .
+
+  endmethod .                    "atualiza_atributos
 
   method set_text .
 
@@ -965,7 +1071,7 @@ class lcl_report implementation.
       catch cx_salv_not_found .
     endtry .
 
-  endmethod .
+  endmethod .                    "set_text
 
   method set_text_output .
 
@@ -1000,7 +1106,7 @@ class lcl_report implementation.
 
     endloop.
 
-  endmethod.
+  endmethod.                    "set_text_output
 
 
   method link_click .
@@ -1043,7 +1149,34 @@ class lcl_report implementation.
 
     endif.
 
-  endmethod .
+  endmethod .                    "link_click
+
+
+  method process .
+
+    data:
+      value type salv_t_row,
+      line  type i .
+
+    field-symbols:
+      <line> type snwd_texts .
+
+    case sy-ucomm .
+
+      when 'REFRESH' .
+
+        me->get_data_refresh( ) .
+
+        if me->lo_table is bound .
+
+          me->lo_table->refresh( ) .
+
+        endif .
+
+      when others .
+
+    endcase .
+  endmethod .                    "process
 
 
   method change_tmscsys .
@@ -1091,7 +1224,7 @@ class lcl_report implementation.
     free:
       lt_tmscsys .
 
-  endmethod.
+  endmethod.                    "change_tmscsys
 
   method assign .
 
@@ -1110,7 +1243,23 @@ class lcl_report implementation.
 
     endif .
 
-  endmethod .
+  endmethod .                    "assign
+
+  method get_data_refresh .
+
+    me->get_data(
+      exporting
+        ambiente     = i_ambiente
+        ordem        = i_ordem
+        tipo         = i_tipo
+        status       = i_status
+        categoria    = i_categoria
+        usuario      = i_usuario
+        data         = i_data
+        data_produca = i_data_produca
+    ).
+
+  endmethod .                    "get_data_refresh
 
   method on_link_click.
 
@@ -1120,8 +1269,13 @@ class lcl_report implementation.
         column = column
     ).
 
-  endmethod.
+  endmethod.                    "on_link_click
 
+  method on_added_function .
+
+    me->process( ) .
+
+  endmethod .                    "on_added_function
 
 endclass.                    "lcl_report IMPLEMENTATION
 
@@ -1180,3 +1334,5 @@ start-of-selection .
 end-of-selection.
 
   lo_report->generate_output( ) .
+  
+  
