@@ -1,12 +1,10 @@
 
-report zteste message-id >0 .
-
 report zteste_request message-id >0 .
+
 *--------------------------------------------------------------------*
 *- Anotações
 *--------------------------------------------------------------------*
 *- Coloca icone ou mesmo informação para Modificavel e etc
-*- Informar o tipo de request (copiar e etc)
 
 *--------------------------------------------------------------------*
 *- Tipos SAP
