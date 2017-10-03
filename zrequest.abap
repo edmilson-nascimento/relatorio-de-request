@@ -1,6 +1,13 @@
 
 report zteste message-id >0 .
 
+report zteste_request message-id >0 .
+*--------------------------------------------------------------------*
+*- Anotações
+*--------------------------------------------------------------------*
+*- Coloca icone ou mesmo informação para Modificavel e etc
+*- Informar o tipo de request (copiar e etc)
+
 *--------------------------------------------------------------------*
 *- Tipos SAP
 *--------------------------------------------------------------------*
@@ -94,7 +101,7 @@ class lcl_report definition.
         !categoria    type trg_char4
         !usuario      type wcft_cc_sel_range_user_tab
         !data         type trg_date
-        !data_produca type trg_date .
+        !data_produca type datum .
 
     methods generate_output .
 
@@ -123,7 +130,7 @@ class lcl_report definition.
       i_categoria    type trg_char4,
       i_usuario      type wcft_cc_sel_range_user_tab,
       i_data         type trg_date,
-      i_data_produca type trg_date .
+      i_data_produca type datum .
 
 
     methods limpar_dados
@@ -180,7 +187,7 @@ class lcl_report definition.
         !categoria    type trg_char4
         !usuario      type wcft_cc_sel_range_user_tab
         !data         type trg_date
-        !data_produca type trg_date .
+        !data_produca type datum .
 
     methods set_text
       importing
@@ -239,26 +246,54 @@ class lcl_report implementation.
     refresh:
       ambiente .
 
-    select domnam sysnam limbo
-      into table t_tmscsys
-      from tmscsys.
+*    select domnam sysnam limbo
+*      into table t_tmscsys
+*      from tmscsys.
+*
+*    if sy-subrc eq 0 .
+*
+*      loop at t_tmscsys into ls_tmscsys .
+*
+*        ls_sysnam-sign = 'I' .
+*        ls_sysnam-option = 'EQ' .
+*        ls_sysnam-low = ls_tmscsys-sysnam .
+*        append ls_sysnam to ambiente .
+*        clear  ls_sysnam .
+*
+*      endloop.
+*
+*      sort ambiente ascending by low .
+*
+*    endif.
 
-    if sy-subrc eq 0 .
+*   Para ambiente Panpharma
+    ls_sysnam-sign    = 'I' .
+    ls_sysnam-option  = 'EQ' .
+    ls_sysnam-low     = 'BOL' .
+    append ls_sysnam to ambiente .
+    ls_tmscsys-sysnam = ls_sysnam-low .
+    append ls_tmscsys to t_tmscsys .
+    clear:
+      ls_sysnam, ls_tmscsys .
 
-      loop at t_tmscsys into ls_tmscsys .
 
-        ls_sysnam-sign = 'I' .
-        ls_sysnam-option = 'EQ' .
-        ls_sysnam-low = ls_tmscsys-sysnam .
-        append ls_sysnam to ambiente .
-        clear  ls_sysnam .
+    ls_sysnam-sign   = 'I' .
+    ls_sysnam-option = 'EQ' .
+    ls_sysnam-low    = 'Q01' .
+    append ls_sysnam to ambiente .
+    ls_tmscsys-sysnam = ls_sysnam-low .
+    append ls_tmscsys to t_tmscsys .
+    clear:
+      ls_sysnam, ls_tmscsys .
 
-      endloop.
-
-      sort ambiente ascending by low .
-
-    endif.
-
+    ls_sysnam-sign   = 'I' .
+    ls_sysnam-option = 'EQ' .
+    ls_sysnam-low    = 'P01' .
+    append ls_sysnam to ambiente .
+    ls_tmscsys-sysnam = ls_sysnam-low .
+    append ls_tmscsys to t_tmscsys .
+    clear:
+      ls_sysnam, ls_tmscsys .
 
     opt_list-name       = 'OBJECTKEY1'.
     opt_list-options-eq = abap_on .
@@ -336,12 +371,12 @@ class lcl_report implementation.
 
     me->monta_relatorio(
       exporting
-        e070   = gt_e070
-        status = gt_status
-        tipo   = gt_tipo
+        e070      = gt_e070
+        status    = gt_status
+        tipo      = gt_tipo
         categoria = gt_categoria
-        e07t   = gt_e07t
-        table  = table
+        e07t      = gt_e07t
+        table     = table
     ).
 
     me->atualiza_atributos(
@@ -377,9 +412,9 @@ class lcl_report implementation.
 
     try.
         call method cl_salv_table=>factory
-          IMPORTING
+          importing
             r_salv_table = lo_table
-          CHANGING
+          changing
             t_table      = <table>.
 
 
@@ -391,7 +426,6 @@ class lcl_report implementation.
         lo_table->set_screen_status(
           pfstatus      = 'STANDARD_FULLSCREEN'
           report        = sy-cprog
-*         report        = 'SAPLKKBL'
           set_functions = lo_table->c_functions_all ).
 
 
@@ -400,6 +434,9 @@ class lcl_report implementation.
         columns->set_optimize( 'X' ).
         column ?= columns->get_column( 'TRKORR' ).
         column->set_cell_type( if_salv_c_cell_type=>hotspot ).
+
+        column ?= columns->get_column( 'TRFUNCTION' ).
+        column->set_long_text( 'Tipo de request' ).
 
         me->set_text_output(
           exporting
@@ -457,11 +494,11 @@ class lcl_report implementation.
       ls_categoria type ty_categoria.
 
     call function 'FICO_DOMAIN_VALUES_GET'
-      EXPORTING
+      exporting
         i_table_name = 'E070'
         i_field_name = 'TRFUNCTION'
         i_langu      = sy-langu
-      IMPORTING
+      importing
         e_t_list     = lt_list.
 
     loop at lt_list into ls_list .
@@ -477,11 +514,11 @@ class lcl_report implementation.
     clear   ls_list .
 
     call function 'FICO_DOMAIN_VALUES_GET'
-      EXPORTING
+      exporting
         i_table_name = 'E070'
         i_field_name = 'TRSTATUS'
         i_langu      = sy-langu
-      IMPORTING
+      importing
         e_t_list     = lt_list.
 
     loop at lt_list into ls_list.
@@ -497,11 +534,11 @@ class lcl_report implementation.
     clear   ls_list .
 
     call function 'FICO_DOMAIN_VALUES_GET'
-      EXPORTING
+      exporting
         i_table_name = 'E070'
         i_field_name = 'KORRDEV'
         i_langu      = sy-langu
-      IMPORTING
+      importing
         e_t_list     = lt_list.
 
     loop at lt_list into ls_list.
@@ -575,6 +612,15 @@ class lcl_report implementation.
       changing
         fieldcatalog = lt_fieldcat
     ).
+    me->cria_coluna(
+      exporting
+        fieldname    = 'DESCREQ'
+        outputlen    = 60
+        ref_table    = 'E07T'
+        ref_field    = 'AS4TEXT'
+      changing
+        fieldcatalog = lt_fieldcat
+    ).
 *    me->cria_coluna(
 *      exporting
 *        fieldname    = 'AS4POS'
@@ -645,6 +691,8 @@ class lcl_report implementation.
         outputlen    = 42
         ref_table    = ''
         ref_field    = ''
+*       ref_table    = 'E070'
+*       ref_field    = 'TRFUNCTION'
       changing
         fieldcatalog = lt_fieldcat
     ).
@@ -666,16 +714,16 @@ class lcl_report implementation.
       changing
         fieldcatalog = lt_fieldcat
     ).
-    me->cria_coluna(
-      exporting
-        fieldname    = 'KORRDEV_TEXT'
-        outputlen    = 4
-        ref_table    = 'DD07D'
-        ref_field    = 'DDTEXT'
-      changing
-        fieldcatalog = lt_fieldcat
-    ).
-
+*    me->cria_coluna(
+*      exporting
+*        fieldname    = 'KORRDEV_TEXT'
+*        outputlen    = 4
+*        ref_table    = 'DD07D'
+*        ref_field    = 'DDTEXT'
+*      changing
+*        fieldcatalog = lt_fieldcat
+*    ).
+*
 *    me->cria_coluna(
 *      exporting
 *        fieldname    = 'TRKORRTASK'
@@ -694,15 +742,7 @@ class lcl_report implementation.
 *      changing
 *        fieldcatalog = lt_fieldcat
 *    ).
-    me->cria_coluna(
-      exporting
-        fieldname    = 'DESCREQ'
-        outputlen    = 60
-        ref_table    = 'E07T'
-        ref_field    = 'AS4TEXT'
-      changing
-        fieldcatalog = lt_fieldcat
-    ).
+
 *    me->cria_coluna(
 *      exporting
 *        fieldname    = 'DESCTASK'
@@ -815,15 +855,12 @@ class lcl_report implementation.
 
     loop at e070 into ls_e070 .
 
-*     clear: lv_controla_transp, gs_cofile.
-      clear gv_nao_gera.
-
       call function 'TR_READ_GLOBAL_INFO_OF_REQUEST'
-        EXPORTING
+        exporting
           iv_trkorr   = ls_e070-trkorr
           iv_dir_type = 'T'
           is_settings = settings
-        IMPORTING
+        importing
           es_cofile   = cofile.
 
 
@@ -912,8 +949,6 @@ class lcl_report implementation.
 
       endloop.
 
-      check gv_nao_gera is initial.
-
       read table tipo into ls_tipo
         with key tipo = ls_e070-trfunction
         binary search.
@@ -921,6 +956,7 @@ class lcl_report implementation.
       if sy-subrc eq 0 .
         assign component 'TRFUNCTION' of structure <line> to <field>.
         <field> = ls_tipo-desc.
+        unassign <field> .
       endif.
 
       read table status into ls_status
@@ -970,7 +1006,10 @@ class lcl_report implementation.
 
       if sy-subrc eq 0 .
         assign component 'DESCREQ' of structure <line> to <field>.
+        if <field> is assigned .
         <field> = ls_e07t-as4text.
+        unassign <field> .
+        endif .
       endif.
 
       assign component 'TRKORR' of structure <line> to <field>.
@@ -1291,14 +1330,16 @@ data:
 *--------------------------------------------------------------------*
 selection-screen begin of block b1 with frame title text-001.
 
-select-options: s_amb for trtarget-tarsystem no intervals obligatory,
-                p_ordem for  e070-trkorr,
-                p_tipo  for  e070-trfunction,
-                p_stat  for  e070-trstatus default 'R',
-                p_categ for  e070-korrdev,
-                p_user  for  e070-as4user default sy-uname ,
-                p_data  for  e070-as4date default sy-datum ,
-                s_dtecp for  e070-as4date.
+select-options:
+  s_amb for trtarget-tarsystem no intervals obligatory,
+  p_ordem for  e070-trkorr,
+  p_tipo  for  e070-trfunction,
+  p_stat  for  e070-trstatus default 'R',
+  p_categ for  e070-korrdev,
+  p_user  for  e070-as4user default sy-uname ,
+  p_data  for  e070-as4date default sy-datum .
+parameters:
+  p_produ type e070-as4date .
 selection-screen end of block b1.
 
 *--------------------------------------------------------------------*
@@ -1327,12 +1368,11 @@ start-of-selection .
       categoria    = p_categ[]
       usuario      = p_user[]
       data         = p_data[]
-      data_produca = s_dtecp[]
+      data_produca = p_produ
   ).
 
 
 end-of-selection.
 
   lo_report->generate_output( ) .
-  
   
