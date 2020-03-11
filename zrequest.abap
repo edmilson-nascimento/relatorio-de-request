@@ -1,5 +1,6 @@
 
 report zteste_request message-id >0 .
+REPORT ZREQUEST.
 
 *--------------------------------------------------------------------*
 *- Anotações
@@ -162,8 +163,17 @@ class class_report definition .
         !outputlen    type lvc_outlen
         !ref_table    type lvc_rtname
         !ref_field    type lvc_rfname
+        !text_l       type lvc_s_fcat-scrtext_l optional
+        !text_m       type lvc_s_fcat-scrtext_m optional
+        !text_s       type lvc_s_fcat-scrtext_s optional
       changing
         !fieldcatalog type lvc_t_fcat .
+
+    methods create_date_time
+      importing
+        !sysnam  type sysname
+      changing
+        !catalog type lvc_t_fcat .
 
     methods monta_relatorio
       importing
@@ -664,6 +674,14 @@ class class_report implementation.
         fieldcatalog = lt_fieldcat
     ).
 
+
+*    me->create_date_time(
+*      exporting
+*        sysnam  = 'DV2'
+*      changing
+*        catalog = lt_fieldcat
+*    ) .
+
     me->cria_coluna(
       exporting
         fieldname    = 'AS4DATE'
@@ -990,10 +1008,64 @@ class class_report implementation.
     line-ref_table = ref_table .
     line-ref_field = ref_field .
 
+    if ( text_l is not initial ) .
+      line-scrtext_l = text_l .
+    endif .
+    if ( text_m is not initial ) .
+      line-scrtext_m = text_m .
+    endif .
+    if ( text_s is not initial ) .
+      line-scrtext_s = text_s .
+    endif .
+
     append line to fieldcatalog.
     clear  line .
 
   endmethod.                    "cria_coluna
+
+
+  method create_date_time .
+
+    data:
+     text_l type lvc_s_fcat-scrtext_l,
+     text_m type lvc_s_fcat-scrtext_m,
+     text_s type lvc_s_fcat-scrtext_s .
+
+    if ( sysnam is initial ) .
+    else .
+
+      text_l = text_m = text_s = sysnam .
+
+      me->cria_coluna(
+        exporting
+          fieldname    = |AS4DATE_{ sysnam }|
+          outputlen    = 8
+          ref_table    = 'E070'
+          ref_field    = 'AS4DATE'
+          text_l       = text_l
+          text_m       = text_m
+          text_s       = text_s
+        changing
+          fieldcatalog = catalog
+      ).
+
+
+      me->cria_coluna(
+        exporting
+          fieldname    = |AS4TIME_{ sysnam }|
+          outputlen    = 6
+          ref_table    = 'E070'
+          ref_field    = 'AS4TIME'
+          text_l       = text_l
+          text_m       = text_m
+          text_s       = text_s
+        changing
+          fieldcatalog = catalog
+      ).
+
+    endif .
+
+  endmethod .
 
   method atualiza_atributos .
 
