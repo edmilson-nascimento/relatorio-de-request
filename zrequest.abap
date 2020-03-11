@@ -21,7 +21,7 @@ tables:
 *----------------------------------------------------------------------*
 *       CLASS lcl_report DEFINITION
 *----------------------------------------------------------------------*
-class lcl_report definition.
+class class_report definition .
 
   public section.
 
@@ -108,27 +108,27 @@ class lcl_report definition.
 
     methods on_link_click
       for event if_salv_events_actions_table~link_click
-             of cl_salv_events_table
+                  of cl_salv_events_table
       importing row
-                column.
+                  column.
 
     methods on_added_function
       for event if_salv_events_functions~added_function
-             of cl_salv_events_table
+                  of cl_salv_events_table
       importing e_salv_function.
 
   private section .
 
     data:
       table          type ref to data,
-      i_ambiente     type r_sysnam,
+      ambiente     type r_sysnam,
       i_ordem        type /gc1/tab_rng_trkorr,
       i_tipo         type trg_char1,
       i_status       type r_status,
       i_categoria    type trg_char4,
       i_usuario      type wcft_cc_sel_range_user_tab,
       i_data         type trg_date,
-      i_data_produca type datum .
+      i_data_produca type datum.
 
 
     methods limpar_dados
@@ -228,7 +228,7 @@ endclass.                    "lcl_report DEFINITION
 *----------------------------------------------------------------------*
 *       CLASS lcl_report IMPLEMENTATION
 *----------------------------------------------------------------------*
-class lcl_report implementation.
+class class_report implementation.
 
 
 
@@ -446,7 +446,7 @@ class lcl_report implementation.
 
 *       Layout de Zebra
         lo_display = lo_table->get_display_settings( ) .
-        lo_display->set_striped_pattern(  cl_salv_display_settings=>true ) .
+    lo_display->set_striped_pattern(  cl_salv_display_settings=>true ) .
 
 *       Ordenação de campos
         lo_sorts = lo_table->get_sorts( ) .
@@ -611,6 +611,7 @@ class lcl_report implementation.
       changing
         fieldcatalog = lt_fieldcat
     ).
+
     me->cria_coluna(
       exporting
         fieldname    = 'DESCREQ'
@@ -620,42 +621,6 @@ class lcl_report implementation.
       changing
         fieldcatalog = lt_fieldcat
     ).
-*    me->cria_coluna(
-*      exporting
-*        fieldname    = 'AS4POS'
-*        outputlen    = 6
-*        ref_table    = 'E071'
-*        ref_field    = 'AS4POS'
-*      changing
-*        fieldcatalog = lt_fieldcat
-*    ).
-*    me->cria_coluna(
-*      exporting
-*        fieldname    = 'PGMID'
-*        outputlen    = 6
-*        ref_table    = 'E071'
-*        ref_field    = 'PGMID'
-*      changing
-*        fieldcatalog = lt_fieldcat
-*    ).
-*    me->cria_coluna(
-*      exporting
-*        fieldname    = 'OBJECT'
-*        outputlen    = 4
-*        ref_table    = 'E071'
-*        ref_field    = 'OBJECT'
-*      changing
-*        fieldcatalog = lt_fieldcat
-*    ).
-*    me->cria_coluna(
-*      exporting
-*        fieldname    = 'OBJNAME'
-*        outputlen    = 120
-*        ref_table    = 'E071'
-*        ref_field    = 'OBJ_NAME'
-*      changing
-*        fieldcatalog = lt_fieldcat
-*    ).
 
     me->cria_coluna(
       exporting
@@ -666,6 +631,39 @@ class lcl_report implementation.
       changing
         fieldcatalog = lt_fieldcat
     ).
+
+    me->cria_coluna(
+      exporting
+        fieldname    = 'TRFUNCTION'
+        outputlen    = 42
+        ref_table    = ''
+        ref_field    = ''
+*       ref_table    = 'E070'
+*       ref_field    = 'TRFUNCTION'
+      changing
+        fieldcatalog = lt_fieldcat
+    ).
+
+    me->cria_coluna(
+      exporting
+        fieldname    = 'TRSTATUS'
+        outputlen    = 1
+        ref_table    = 'E070'
+        ref_field    = 'TRSTATUS'
+      changing
+        fieldcatalog = lt_fieldcat
+    ).
+
+    me->cria_coluna(
+      exporting
+        fieldname    = 'KORRDEV'
+        outputlen    = 4
+        ref_table    = 'E070'
+        ref_field    = 'KORRDEV'
+      changing
+        fieldcatalog = lt_fieldcat
+    ).
+
     me->cria_coluna(
       exporting
         fieldname    = 'AS4DATE'
@@ -684,73 +682,7 @@ class lcl_report implementation.
       changing
         fieldcatalog = lt_fieldcat
     ).
-    me->cria_coluna(
-      exporting
-        fieldname    = 'TRFUNCTION'
-        outputlen    = 42
-        ref_table    = ''
-        ref_field    = ''
-*       ref_table    = 'E070'
-*       ref_field    = 'TRFUNCTION'
-      changing
-        fieldcatalog = lt_fieldcat
-    ).
-    me->cria_coluna(
-      exporting
-        fieldname    = 'TRSTATUS'
-        outputlen    = 1
-        ref_table    = 'E070'
-        ref_field    = 'TRSTATUS'
-      changing
-        fieldcatalog = lt_fieldcat
-    ).
-    me->cria_coluna(
-      exporting
-        fieldname    = 'KORRDEV'
-        outputlen    = 4
-        ref_table    = 'E070'
-        ref_field    = 'KORRDEV'
-      changing
-        fieldcatalog = lt_fieldcat
-    ).
-*    me->cria_coluna(
-*      exporting
-*        fieldname    = 'KORRDEV_TEXT'
-*        outputlen    = 4
-*        ref_table    = 'DD07D'
-*        ref_field    = 'DDTEXT'
-*      changing
-*        fieldcatalog = lt_fieldcat
-*    ).
-*
-*    me->cria_coluna(
-*      exporting
-*        fieldname    = 'TRKORRTASK'
-*        outputlen    = 20
-*        ref_table    = 'E070'
-*        ref_field    = 'TRKORR'
-*      changing
-*        fieldcatalog = lt_fieldcat
-*    ).
-*    me->cria_coluna(
-*      exporting
-*        fieldname    = 'AS4USERTASK'
-*        outputlen    = 12
-*        ref_table    = 'E070'
-*        ref_field    = 'AS4USER'
-*      changing
-*        fieldcatalog = lt_fieldcat
-*    ).
 
-*    me->cria_coluna(
-*      exporting
-*        fieldname    = 'DESCTASK'
-*        outputlen    = 60
-*        ref_table    = 'E07T'
-*        ref_field    = 'AS4TEXT'
-*      changing
-*        fieldcatalog = lt_fieldcat
-*    ).
     me->cria_coluna(
       exporting
         fieldname    = 'DTECP'
@@ -770,6 +702,22 @@ class lcl_report implementation.
         fieldcatalog = lt_fieldcat
     ).
 
+*  Verificando os ambiente passados como parametro
+    if ( lines( ambiente ) eq 0 ) .
+
+    else .
+
+      refresh t_tmscsys .
+
+      loop at ambiente into data(line_ambiente)
+        where sign   eq 'I'
+          and option eq 'EQ' .
+
+        append value #( sysnam = line_ambiente-low ) to t_tmscsys .
+
+      endloop .
+
+    endif .
 
     loop at t_tmscsys into ls_tmscsys .
 
@@ -905,17 +853,17 @@ class lcl_report implementation.
               read table ls_systems-steps into ls_steps
                                           with key stepid = 'E' .
               if sy-subrc eq 0 .
-                assign component systemid of structure <line> to <field>.
+               assign component systemid of structure <line> to <field>.
                 <field> = icon_led_green.
               else.
 *             Verificando se a opção Importação esta aplicada
                 read table ls_systems-steps into ls_steps
                                             with key stepid = 'I' .
                 if sy-subrc eq 0 .
-                  assign component systemid of structure <line> to <field>.
+               assign component systemid of structure <line> to <field>.
                   <field> = icon_led_green.
                 else.
-                  assign component systemid of structure <line> to <field>.
+               assign component systemid of structure <line> to <field>.
                   <field> = icon_wd_radio_button_empty.
                 endif.
               endif.
@@ -927,7 +875,7 @@ class lcl_report implementation.
         endif.
 
         describe table ls_systems-steps lines ultimo_registro .
-        read table ls_systems-steps into ls_steps index ultimo_registro .
+       read table ls_systems-steps into ls_steps index ultimo_registro .
         read table ls_steps-actions into ls_action index 1 .
 
         if  sy-subrc eq 0 .
@@ -1006,8 +954,8 @@ class lcl_report implementation.
       if sy-subrc eq 0 .
         assign component 'DESCREQ' of structure <line> to <field>.
         if <field> is assigned .
-        <field> = ls_e07t-as4text.
-        unassign <field> .
+          <field> = ls_e07t-as4text.
+          unassign <field> .
         endif .
       endif.
 
@@ -1194,7 +1142,7 @@ class lcl_report implementation.
 
     data:
       value type salv_t_row,
-      line  type i .
+      line  type i.
 
     field-symbols:
       <line> type snwd_texts .
@@ -1287,7 +1235,7 @@ class lcl_report implementation.
 
     me->get_data(
       exporting
-        ambiente     = i_ambiente
+        ambiente     = ambiente
         ordem        = i_ordem
         tipo         = i_tipo
         status       = i_status
@@ -1322,7 +1270,7 @@ endclass.                    "lcl_report IMPLEMENTATION
 *- Tela de seleção
 *--------------------------------------------------------------------*
 data:
-  lo_report type ref to lcl_report.
+  lo_report type ref to class_report.
 
 *--------------------------------------------------------------------*
 *- Tela de seleção
@@ -1346,7 +1294,7 @@ selection-screen end of block b1.
 *--------------------------------------------------------------------*
 initialization.
 
-  lcl_report=>initial(
+  class_report=>initial(
     changing
       ambiente = s_amb[]
   ).
@@ -1374,4 +1322,3 @@ start-of-selection .
 end-of-selection.
 
   lo_report->generate_output( ) .
-  
