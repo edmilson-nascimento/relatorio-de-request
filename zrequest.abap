@@ -1,6 +1,5 @@
 
 report zteste_request message-id >0 .
-REPORT ZREQUEST.
 
 *--------------------------------------------------------------------*
 *- Anotações
