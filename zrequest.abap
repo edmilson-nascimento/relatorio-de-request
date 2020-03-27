@@ -1,5 +1,4 @@
-
-report zteste_request message-id >0 .
+REPORT ZREQUEST.
 
 *--------------------------------------------------------------------*
 *- Anotações
@@ -86,7 +85,7 @@ class class_report definition .
       changing
         ambiente type r_sysnam .
 
-    methods cria_tabela
+    methods create_structure
       importing
         !ambiente type r_sysnam .
 
@@ -121,7 +120,7 @@ class class_report definition .
 
     data:
       table          type ref to data,
-      ambiente     type r_sysnam,
+      ambiente       type r_sysnam,
       i_ordem        type /gc1/tab_rng_trkorr,
       i_tipo         type trg_char1,
       i_status       type r_status,
@@ -167,6 +166,13 @@ class class_report definition .
         !text_s       type lvc_s_fcat-scrtext_s optional
       changing
         !fieldcatalog type lvc_t_fcat .
+
+    methods cria_coluna_ambiente
+      importing
+        !ambiente     type class_report=>r_sysnam
+      changing
+        !fieldcatalog type lvc_t_fcat .
+
 
     methods create_date_time
       importing
@@ -254,30 +260,10 @@ class class_report implementation.
     refresh:
       ambiente .
 
-*    select domnam sysnam limbo
-*      into table t_tmscsys
-*      from tmscsys.
-*
-*    if sy-subrc eq 0 .
-*
-*      loop at t_tmscsys into ls_tmscsys .
-*
-*        ls_sysnam-sign = 'I' .
-*        ls_sysnam-option = 'EQ' .
-*        ls_sysnam-low = ls_tmscsys-sysnam .
-*        append ls_sysnam to ambiente .
-*        clear  ls_sysnam .
-*
-*      endloop.
-*
-*      sort ambiente ascending by low .
-*
-*    endif.
-
 *   Para ambiente Panpharma
     ls_sysnam-sign    = 'I' .
     ls_sysnam-option  = 'EQ' .
-    ls_sysnam-low     = 'BOL' .
+    ls_sysnam-low     = 'DV2' .
     append ls_sysnam to ambiente .
     ls_tmscsys-sysnam = ls_sysnam-low .
     append ls_tmscsys to t_tmscsys .
@@ -287,7 +273,7 @@ class class_report implementation.
 
     ls_sysnam-sign   = 'I' .
     ls_sysnam-option = 'EQ' .
-    ls_sysnam-low    = 'Q01' .
+    ls_sysnam-low    = 'QAS' .
     append ls_sysnam to ambiente .
     ls_tmscsys-sysnam = ls_sysnam-low .
     append ls_tmscsys to t_tmscsys .
@@ -296,7 +282,7 @@ class class_report implementation.
 
     ls_sysnam-sign   = 'I' .
     ls_sysnam-option = 'EQ' .
-    ls_sysnam-low    = 'P01' .
+    ls_sysnam-low    = 'PRD' .
     append ls_sysnam to ambiente .
     ls_tmscsys-sysnam = ls_sysnam-low .
     append ls_tmscsys to t_tmscsys .
@@ -419,6 +405,7 @@ class class_report implementation.
 
 
     try.
+
         call method cl_salv_table=>factory
           importing
             r_salv_table = lo_table
@@ -455,13 +442,13 @@ class class_report implementation.
 
 *       Layout de Zebra
         lo_display = lo_table->get_display_settings( ) .
-    lo_display->set_striped_pattern(  cl_salv_display_settings=>true ) .
+        lo_display->set_striped_pattern(  cl_salv_display_settings=>true ) .
 
-*       Ordenação de campos
-        lo_sorts = lo_table->get_sorts( ) .
-        lo_sorts->add_sort('AS4DATE') .
-        lo_sorts->add_sort('AS4TIME') .
-        lo_sorts->add_sort('TRKORR') .
+**       Ordenação de campos
+*        lo_sorts = lo_table->get_sorts( ) .
+*        lo_sorts->add_sort('AS4DATE') .
+*        lo_sorts->add_sort('AS4TIME') .
+*        lo_sorts->add_sort('TRKORR') .
 
         lo_table->display( ).
 
@@ -469,7 +456,8 @@ class class_report implementation.
       catch cx_salv_not_found .
       catch cx_salv_existing .
       catch cx_salv_data_error .
-      catch  cx_salv_object_not_found .
+      catch cx_salv_object_not_found .
+
     endtry.
 
   endmethod .                    "generate_output
@@ -599,7 +587,7 @@ class class_report implementation.
   endmethod.                    "seleciona_dados
 
 
-  method cria_tabela .
+  method create_structure .
 
     data:
       lt_fieldcat type lvc_t_fcat,
@@ -673,85 +661,31 @@ class class_report implementation.
         fieldcatalog = lt_fieldcat
     ).
 
-
-*    me->create_date_time(
+*    me->cria_coluna(
 *      exporting
-*        sysnam  = 'DV2'
+*        fieldname    = 'AS4DATE'
+*        outputlen    = 8
+*        ref_table    = 'E070'
+*        ref_field    = 'AS4DATE'
 *      changing
-*        catalog = lt_fieldcat
-*    ) .
+*        fieldcatalog = lt_fieldcat
+*    ).
+*    me->cria_coluna(
+*      exporting
+*        fieldname    = 'AS4TIME'
+*        outputlen    = 6
+*        ref_table    = 'E070'
+*        ref_field    = 'AS4TIME'
+*      changing
+*        fieldcatalog = lt_fieldcat
+*    ).
 
-    me->cria_coluna(
+    me->cria_coluna_ambiente(
       exporting
-        fieldname    = 'AS4DATE'
-        outputlen    = 8
-        ref_table    = 'E070'
-        ref_field    = 'AS4DATE'
+        ambiente     = ambiente
       changing
         fieldcatalog = lt_fieldcat
     ).
-    me->cria_coluna(
-      exporting
-        fieldname    = 'AS4TIME'
-        outputlen    = 6
-        ref_table    = 'E070'
-        ref_field    = 'AS4TIME'
-      changing
-        fieldcatalog = lt_fieldcat
-    ).
-
-    me->cria_coluna(
-      exporting
-        fieldname    = 'DTECP'
-        outputlen    = 10
-        ref_table    = 'SYST'
-        ref_field    = 'DATUM'
-      changing
-        fieldcatalog = lt_fieldcat
-    ).
-    me->cria_coluna(
-      exporting
-        fieldname    = 'TMECP'
-        outputlen    = 10
-        ref_table    = 'SYST'
-        ref_field    = 'UZEIT'
-      changing
-        fieldcatalog = lt_fieldcat
-    ).
-
-*  Verificando os ambiente passados como parametro
-    if ( lines( ambiente ) eq 0 ) .
-
-    else .
-
-      refresh t_tmscsys .
-
-      loop at ambiente into data(line_ambiente)
-        where sign   eq 'I'
-          and option eq 'EQ' .
-
-        append value #( sysnam = line_ambiente-low ) to t_tmscsys .
-
-      endloop .
-
-    endif .
-
-    loop at t_tmscsys into ls_tmscsys .
-
-      fieldname = ls_tmscsys-sysnam .
-
-      me->cria_coluna(
-        exporting
-          fieldname    = fieldname
-          outputlen    = 10
-          ref_table    = ''
-          ref_field    = ''
-        changing
-          fieldcatalog = lt_fieldcat
-      ).
-
-    endloop.
-
 
     call method cl_alv_table_create=>create_dynamic_table
       exporting
@@ -828,90 +762,90 @@ class class_report implementation.
           es_cofile   = cofile.
 
 
-      loop at t_tmscsys into ls_tmscys .
-
-*     De acordo com a proposta de nova logica, será colocado o icone com farol apagado
-*     caso ainda não tenha a opção de importação no historico da request.
-*     Caso tenho ao menos 1 warning, será o farol amarelo
-*     Caso tenho ao menos 1 erro, será o farol vermelho
-
-        systemid = ls_tmscys-sysnam .
-
-*       Ordenando de acordo com o Sistema
-        sort cofile-systems ascending by systemid.
-
-*       Buscando log espeficico de cada Sistema
-        read table cofile-systems into ls_systems
-                                  with key systemid = systemid
-                                  binary search .
-        if  sy-subrc eq 0 .
-
-*         Ordenando de acordo com o retorno.
-*         Cada ação de importação da request tem um retorno.
-          sort ls_systems-steps ascending by rc.
-
-*         Verificando se houve algum erro
-          read table ls_systems-steps into ls_steps
-                                      with key rc = 8
-                                      binary search.
-          if sy-subrc eq 0 .
-            assign component systemid of structure <line> to <field>.
-            <field> = icon_led_red.
-          else.
-*         Verificando se houve algum warning
-            read table ls_systems-steps into ls_steps
-                                        with key rc = 4
-                                        binary search .
-            if sy-subrc eq 0 .
-              assign component systemid of structure <line> to <field>.
-              <field> = icon_led_yellow.
-            else.
-*           Verifica a opção de Exportação (significa que é sistema de origem DEV)
-              read table ls_systems-steps into ls_steps
-                                          with key stepid = 'E' .
-              if sy-subrc eq 0 .
-               assign component systemid of structure <line> to <field>.
-                <field> = icon_led_green.
-              else.
-*             Verificando se a opção Importação esta aplicada
-                read table ls_systems-steps into ls_steps
-                                            with key stepid = 'I' .
-                if sy-subrc eq 0 .
-               assign component systemid of structure <line> to <field>.
-                  <field> = icon_led_green.
-                else.
-               assign component systemid of structure <line> to <field>.
-                  <field> = icon_wd_radio_button_empty.
-                endif.
-              endif.
-            endif.
-          endif.
-        else.
-          assign component systemid of structure <line> to <field>.
-          <field> = icon_wd_radio_button_empty.
-        endif.
-
-        describe table ls_systems-steps lines ultimo_registro .
-       read table ls_systems-steps into ls_steps index ultimo_registro .
-        read table ls_steps-actions into ls_action index 1 .
-
-        if  sy-subrc eq 0 .
-
-          assign component 'DTECP' of structure <line> to <field>.
-          <field> = ls_action-date.
-          assign component 'TMECP' of structure <line> to <field>.
-          <field> = ls_action-time.
-
-        else.
-
-          assign component 'DTECP' of structure <line> to <field>.
-          clear: <field>.
-          assign component 'TMECP' of structure <line> to <field>.
-          clear: <field>.
-
-        endif.
-
-      endloop.
+*      loop at t_tmscsys into ls_tmscys .
+*
+**     De acordo com a proposta de nova logica, será colocado o icone com farol apagado
+**     caso ainda não tenha a opção de importação no historico da request.
+**     Caso tenho ao menos 1 warning, será o farol amarelo
+**     Caso tenho ao menos 1 erro, será o farol vermelho
+*
+*        systemid = ls_tmscys-sysnam .
+*
+**       Ordenando de acordo com o Sistema
+*        sort cofile-systems ascending by systemid.
+*
+**       Buscando log espeficico de cada Sistema
+*        read table cofile-systems into ls_systems
+*                                  with key systemid = systemid
+*                                  binary search .
+*        if  sy-subrc eq 0 .
+*
+**         Ordenando de acordo com o retorno.
+**         Cada ação de importação da request tem um retorno.
+*          sort ls_systems-steps ascending by rc.
+*
+**         Verificando se houve algum erro
+*          read table ls_systems-steps into ls_steps
+*                                      with key rc = 8
+*                                      binary search.
+*          if sy-subrc eq 0 .
+*            assign component systemid of structure <line> to <field>.
+*            <field> = icon_led_red.
+*          else.
+**         Verificando se houve algum warning
+*            read table ls_systems-steps into ls_steps
+*                                        with key rc = 4
+*                                        binary search .
+*            if sy-subrc eq 0 .
+*              assign component systemid of structure <line> to <field>.
+*              <field> = icon_led_yellow.
+*            else.
+**           Verifica a opção de Exportação (significa que é sistema de origem DEV)
+*              read table ls_systems-steps into ls_steps
+*                                          with key stepid = 'E' .
+*              if sy-subrc eq 0 .
+*                assign component systemid of structure <line> to <field>.
+*                <field> = icon_led_green.
+*              else.
+**             Verificando se a opção Importação esta aplicada
+*                read table ls_systems-steps into ls_steps
+*                                            with key stepid = 'I' .
+*                if sy-subrc eq 0 .
+*                  assign component systemid of structure <line> to <field>.
+*                  <field> = icon_led_green.
+*                else.
+*                  assign component systemid of structure <line> to <field>.
+*                  <field> = icon_wd_radio_button_empty.
+*                endif.
+*              endif.
+*            endif.
+*          endif.
+*        else.
+*          assign component systemid of structure <line> to <field>.
+*          <field> = icon_wd_radio_button_empty.
+*        endif.
+*
+*        describe table ls_systems-steps lines ultimo_registro .
+*        read table ls_systems-steps into ls_steps index ultimo_registro .
+*        read table ls_steps-actions into ls_action index 1 .
+*
+*        if  sy-subrc eq 0 .
+*
+*          assign component 'DTECP' of structure <line> to <field>.
+*          <field> = ls_action-date.
+*          assign component 'TMECP' of structure <line> to <field>.
+*          <field> = ls_action-time.
+*
+*        else.
+*
+*          assign component 'DTECP' of structure <line> to <field>.
+*          clear: <field>.
+*          assign component 'TMECP' of structure <line> to <field>.
+*          clear: <field>.
+*
+*        endif.
+*
+*      endloop.
 
       read table tipo into ls_tipo
         with key tipo = ls_e070-trfunction
@@ -1023,12 +957,66 @@ class class_report implementation.
   endmethod.                    "cria_coluna
 
 
+  method cria_coluna_ambiente .
+
+    data:
+      fieldname type lvc_fname .
+
+*  Verificando os ambiente passados como parametro
+    if ( lines( ambiente ) eq 0 ) .
+
+    else .
+
+
+      loop at t_tmscsys into data(line_tmscsys) .
+
+        fieldname = line_tmscsys-sysnam .
+        me->cria_coluna(
+          exporting
+            fieldname    = fieldname
+            outputlen    = 10
+            ref_table    = ''
+            ref_field    = ''
+          changing
+            fieldcatalog = fieldcatalog
+        ).
+
+        fieldname = |DT{ line_tmscsys-sysnam }| .
+        me->cria_coluna(
+          exporting
+            fieldname    = fieldname
+            outputlen    = 10
+            ref_table    = 'SYST'
+            ref_field    = 'DATUM'
+          changing
+            fieldcatalog = fieldcatalog
+        ).
+
+        fieldname = |TM{ line_tmscsys-sysnam }| .
+        me->cria_coluna(
+          exporting
+            fieldname    = fieldname
+            outputlen    = 10
+            ref_table    = 'SYST'
+            ref_field    = 'UZEIT'
+          changing
+            fieldcatalog = fieldcatalog
+        ).
+
+      endloop .
+
+    endif .
+
+
+  endmethod .
+
+
   method create_date_time .
 
     data:
-     text_l type lvc_s_fcat-scrtext_l,
-     text_m type lvc_s_fcat-scrtext_m,
-     text_s type lvc_s_fcat-scrtext_s .
+      text_l type lvc_s_fcat-scrtext_l,
+      text_m type lvc_s_fcat-scrtext_m,
+      text_s type lvc_s_fcat-scrtext_s.
 
     if ( sysnam is initial ) .
     else .
@@ -1233,6 +1221,7 @@ class class_report implementation.
       when others .
 
     endcase .
+
   endmethod .                    "process
 
 
@@ -1341,7 +1330,7 @@ endclass.                    "lcl_report IMPLEMENTATION
 *- Tela de seleção
 *--------------------------------------------------------------------*
 data:
-  lo_report type ref to class_report.
+  report type ref to class_report.
 
 *--------------------------------------------------------------------*
 *- Tela de seleção
@@ -1373,11 +1362,11 @@ initialization.
 
 start-of-selection .
 
-  create object lo_report.
+  create object report.
 
-  lo_report->cria_tabela( ambiente = s_amb[] ).
+  report->create_structure( ambiente = s_amb[] ).
 
-  lo_report->get_data(
+  report->get_data(
     exporting
       ambiente     = s_amb[]
       ordem        = p_ordem[]
@@ -1392,4 +1381,4 @@ start-of-selection .
 
 end-of-selection.
 
-  lo_report->generate_output( ) .
+  report->generate_output( ) .
