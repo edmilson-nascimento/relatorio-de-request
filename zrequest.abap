@@ -757,6 +757,9 @@ class class_report implementation.
 
     loop at e070 into ls_e070 .
 
+      assign new_line->* to <line> .
+      check <line> is assigned .
+
 *     Request
       me->assign(
         exporting
@@ -977,15 +980,23 @@ class class_report implementation.
 
           endif.
 
-*        else.
-*          assign component systemid of structure <line> to <field>.
-*          <field> = icon_wd_radio_button_empty.
+        else.
+
+          me->assign(
+            exporting
+              field = systemid
+              value = icon_wd_radio_button_empty
+            changing
+              line  = <line>
+          ) .
+
         endif.
 
       endloop.
 
 
       insert <line> into table <table>.
+      unassign <line> .
 
     endloop.
 
