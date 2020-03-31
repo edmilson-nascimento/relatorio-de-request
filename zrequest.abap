@@ -91,14 +91,13 @@ class class_report definition .
 
     methods get_data
       importing
-        !ambiente     type r_sysnam
-        !ordem        type /gc1/tab_rng_trkorr
-        !tipo         type trg_char1
-        !status       type r_status
-        !categoria    type trg_char4
-        !usuario      type wcft_cc_sel_range_user_tab
-        !data         type trg_date
-        !data_produca type datum .
+        !ambiente  type r_sysnam
+        !ordem     type /gc1/tab_rng_trkorr
+        !tipo      type trg_char1
+        !status    type r_status
+        !categoria type trg_char4
+        !usuario   type wcft_cc_sel_range_user_tab
+        !data      type trg_date .
 
     methods generate_output .
 
@@ -193,14 +192,13 @@ class class_report definition .
 
     methods atualiza_atributos
       importing
-        !ambiente     type r_sysnam
-        !ordem        type /gc1/tab_rng_trkorr
-        !tipo         type trg_char1
-        !status       type r_status
-        !categoria    type trg_char4
-        !usuario      type wcft_cc_sel_range_user_tab
-        !data         type trg_date
-        !data_produca type datum .
+        !ambiente  type r_sysnam
+        !ordem     type /gc1/tab_rng_trkorr
+        !tipo      type trg_char1
+        !status    type r_status
+        !categoria type trg_char4
+        !usuario   type wcft_cc_sel_range_user_tab
+        !data      type trg_date .
 
     methods set_text
       importing
@@ -233,6 +231,13 @@ class class_report definition .
       importing
         !field type any
         !value type any
+      changing
+        !line  type any .
+
+    methods assign_log
+      importing
+        !field type any
+        !steps type ctslg_steps
       changing
         !line  type any .
 
@@ -382,7 +387,6 @@ class class_report implementation.
         categoria    = categoria
         usuario      = usuario
         data         = data
-        data_produca = data_produca
     ) .
 
 
@@ -753,115 +757,61 @@ class class_report implementation.
 
     loop at e070 into ls_e070 .
 
-      call function 'TR_READ_GLOBAL_INFO_OF_REQUEST'
+*     Request
+      me->assign(
         exporting
-          iv_trkorr   = ls_e070-trkorr
-          iv_dir_type = 'T'
-          is_settings = settings
-        importing
-          es_cofile   = cofile.
+          field = 'TRKORR'
+          value = ls_e070-trkorr
+        changing
+          line  = <line>
+      ).
 
+*     Descricao da Request
+      read table e07t into ls_e07t
+        with key trkorr = ls_e070-trkorr .
 
-*      loop at t_tmscsys into ls_tmscys .
-*
-**     De acordo com a proposta de nova logica, será colocado o icone com farol apagado
-**     caso ainda não tenha a opção de importação no historico da request.
-**     Caso tenho ao menos 1 warning, será o farol amarelo
-**     Caso tenho ao menos 1 erro, será o farol vermelho
-*
-*        systemid = ls_tmscys-sysnam .
-*
-**       Ordenando de acordo com o Sistema
-*        sort cofile-systems ascending by systemid.
-*
-**       Buscando log espeficico de cada Sistema
-*        read table cofile-systems into ls_systems
-*                                  with key systemid = systemid
-*                                  binary search .
-*        if  sy-subrc eq 0 .
-*
-**         Ordenando de acordo com o retorno.
-**         Cada ação de importação da request tem um retorno.
-*          sort ls_systems-steps ascending by rc.
-*
-**         Verificando se houve algum erro
-*          read table ls_systems-steps into ls_steps
-*                                      with key rc = 8
-*                                      binary search.
-*          if sy-subrc eq 0 .
-*            assign component systemid of structure <line> to <field>.
-*            <field> = icon_led_red.
-*          else.
-**         Verificando se houve algum warning
-*            read table ls_systems-steps into ls_steps
-*                                        with key rc = 4
-*                                        binary search .
-*            if sy-subrc eq 0 .
-*              assign component systemid of structure <line> to <field>.
-*              <field> = icon_led_yellow.
-*            else.
-**           Verifica a opção de Exportação (significa que é sistema de origem DEV)
-*              read table ls_systems-steps into ls_steps
-*                                          with key stepid = 'E' .
-*              if sy-subrc eq 0 .
-*                assign component systemid of structure <line> to <field>.
-*                <field> = icon_led_green.
-*              else.
-**             Verificando se a opção Importação esta aplicada
-*                read table ls_systems-steps into ls_steps
-*                                            with key stepid = 'I' .
-*                if sy-subrc eq 0 .
-*                  assign component systemid of structure <line> to <field>.
-*                  <field> = icon_led_green.
-*                else.
-*                  assign component systemid of structure <line> to <field>.
-*                  <field> = icon_wd_radio_button_empty.
-*                endif.
-*              endif.
-*            endif.
-*          endif.
-*        else.
-*          assign component systemid of structure <line> to <field>.
-*          <field> = icon_wd_radio_button_empty.
-*        endif.
-*
-*        describe table ls_systems-steps lines ultimo_registro .
-*        read table ls_systems-steps into ls_steps index ultimo_registro .
-*        read table ls_steps-actions into ls_action index 1 .
-*
-*        if  sy-subrc eq 0 .
-*
-*          assign component 'DTECP' of structure <line> to <field>.
-*          <field> = ls_action-date.
-*          assign component 'TMECP' of structure <line> to <field>.
-*          <field> = ls_action-time.
-*
-*        else.
-*
-*          assign component 'DTECP' of structure <line> to <field>.
-*          clear: <field>.
-*          assign component 'TMECP' of structure <line> to <field>.
-*          clear: <field>.
-*
-*        endif.
-*
-*      endloop.
+      if ( sy-subrc eq 0 ) .
 
-      read table tipo into ls_tipo
-        with key tipo = ls_e070-trfunction
-        binary search.
+        me->assign(
+          exporting
+            field = 'DESCREQ'
+            value = ls_e07t-as4text
+          changing
+            line  = <line>
+        ).
 
-      if sy-subrc eq 0 .
-        assign component 'TRFUNCTION' of structure <line> to <field>.
-        <field> = ls_tipo-desc.
-        unassign <field> .
       endif.
 
-      read table status into ls_status
-        with key status = ls_e070-trstatus
-        binary search.
+*     Usuario da Request
+      me->assign(
+        exporting
+          field = 'AS4USER'
+          value = ls_e070-as4user
+        changing
+          line  = <line>
+      ).
 
-      if sy-subrc eq 0 .
+*     Tipo de Request
+      read table tipo into ls_tipo
+        with key tipo = ls_e070-trfunction .
+
+      if ( sy-subrc eq 0 ) .
+
+        me->assign(
+          exporting
+            field = 'TRFUNCTION'
+            value = ls_tipo-desc
+          changing
+            line  = <line>
+        ).
+
+      endif.
+
+*     Status da Request
+      read table status into ls_status
+        with key status = ls_e070-trstatus .
+
+      if ( sy-subrc eq 0 ) .
 
         me->assign(
           exporting
@@ -870,16 +820,14 @@ class class_report implementation.
           changing
             line  = <line>
         ).
-*        assign component 'TRSTATUS' of structure <line> to <field>.
-*        <field> = ls_status-descr.
 
       endif.
 
+*     Categoria da Request
       read table categoria into ls_categoria
-        with key categoria = ls_e070-korrdev
-        binary search .
+        with key categoria = ls_e070-korrdev .
 
-      if sy-subrc eq 0 .
+      if ( sy-subrc eq 0 ) .
 
         me->assign(
           exporting
@@ -889,35 +837,153 @@ class class_report implementation.
             line  = <line>
         ).
 
-        me->assign(
-          exporting
-            field = 'KORRDEV_TEXT'
-            value = ls_categoria-desc
-          changing
-            line  = <line>
-        ).
+*        me->assign(
+*          exporting
+*            field = 'KORRDEV_TEXT'
+*            value = ls_categoria-desc
+*          changing
+*            line  = <line>
+*        ).
 
       endif .
 
-      read table e07t into ls_e07t
-        with key trkorr = ls_e070-trkorr .
 
-      if sy-subrc eq 0 .
-        assign component 'DESCREQ' of structure <line> to <field>.
-        if <field> is assigned .
-          <field> = ls_e07t-as4text.
-          unassign <field> .
-        endif .
-      endif.
+      call function 'TR_READ_GLOBAL_INFO_OF_REQUEST'
+        exporting
+          iv_trkorr   = ls_e070-trkorr
+          iv_dir_type = 'T'
+          is_settings = settings
+        importing
+          es_cofile   = cofile.
 
-      assign component 'TRKORR' of structure <line> to <field>.
-      <field> = ls_e070-trkorr.
-      assign component 'AS4USER' of structure <line> to <field>.
-      <field> = ls_e070-as4user.
-      assign component 'AS4DATE' of structure <line> to <field>.
-      <field> = ls_e070-as4date.
-      assign component 'AS4TIME' of structure <line> to <field>.
-      <field> = ls_e070-as4time.
+
+      loop at t_tmscsys into ls_tmscys .
+
+        systemid = ls_tmscys-sysnam .
+
+*       Para DEV, o status usado sera "Exportação"
+*       Para os demais ambientes, sera "Importação encerrada"
+
+*       Buscando log espeficico de cada Sistema
+        read table cofile-systems into ls_systems
+                                  with key systemid = systemid .
+        if ( sy-subrc eq 0 ) .
+
+*         Verificando se houve algum erro
+          read table ls_systems-steps into ls_steps
+            with key rc = 8 .
+          if ( sy-subrc eq 0 ) .
+
+            me->assign(
+              exporting
+                field = systemid
+                value = icon_led_red
+              changing
+                line  = <line>
+            ).
+
+            me->assign_log(
+              exporting
+                field  = systemid
+                steps  = ls_systems-steps
+              changing
+                line   = <line>
+            ).
+
+          else.
+
+*           Verificando se houve algum warning
+            read table ls_systems-steps into ls_steps
+              with key rc = 4 .
+            if ( sy-subrc eq 0 ) .
+
+              me->assign(
+                exporting
+                  field = systemid
+                  value = icon_led_yellow
+                changing
+                  line  = <line>
+              ).
+
+              me->assign_log(
+                exporting
+                  field  = systemid
+                  steps  = ls_systems-steps
+                changing
+                  line   = <line>
+              ).
+
+            else.
+
+*             Verifica a opção de Exportação (significa que é sistema de origem DEV)
+              read table ls_systems-steps into ls_steps
+                with key stepid = 'E' .
+              if (  sy-subrc eq 0 ) .
+
+                me->assign(
+                  exporting
+                    field = systemid
+                    value = icon_led_green
+                  changing
+                    line  = <line>
+                ).
+
+                me->assign_log(
+                  exporting
+                    field  = systemid
+                    steps  = ls_systems-steps
+                  changing
+                    line   = <line>
+                ).
+
+              else.
+
+*               Verificando se a opção Importação esta aplicada
+                read table ls_systems-steps into ls_steps
+                                            with key stepid = 'I' .
+                if ( sy-subrc eq 0 ) .
+
+                  me->assign(
+                    exporting
+                      field = systemid
+                      value = icon_led_green
+                    changing
+                      line  = <line>
+                  ) .
+
+                  me->assign_log(
+                    exporting
+                      field  = systemid
+                      steps  = ls_systems-steps
+                    changing
+                      line   = <line>
+                  ).
+
+                else.
+
+                  me->assign(
+                    exporting
+                      field = systemid
+                      value = icon_wd_radio_button_empty
+                    changing
+                      line  = <line>
+                  ).
+
+                endif.
+
+              endif .
+
+            endif .
+
+          endif.
+
+*        else.
+*          assign component systemid of structure <line> to <field>.
+*          <field> = icon_wd_radio_button_empty.
+        endif.
+
+      endloop.
+
 
       insert <line> into table <table>.
 
@@ -1149,6 +1215,32 @@ class class_report implementation.
           c_column      = column
       ).
 
+      field = |DT{ line-sysnam }| .
+      long_text = medium_text = short_text = |Data({ line-sysnam })| .
+      me->set_text(
+        exporting
+          i_field       = field
+          i_long_text   = long_text
+          i_medium_text = medium_text
+          i_short_text  = short_text
+        changing
+          c_columns     = columns
+          c_column      = column
+      ).
+
+      field = |TM{ line-sysnam }| .
+      long_text = medium_text = short_text = |Hora({ line-sysnam })| .
+      me->set_text(
+        exporting
+          i_field       = field
+          i_long_text   = long_text
+          i_medium_text = medium_text
+          i_short_text  = short_text
+        changing
+          c_columns     = columns
+          c_column      = column
+      ).
+
     endloop.
 
   endmethod.                    "set_text_output
@@ -1291,6 +1383,49 @@ class class_report implementation.
 
   endmethod .                    "assign
 
+
+  method assign_log .
+
+    data:
+      fieldname    type char10,
+      steps_line   type ctslg_step,
+      actions_line type ctslg_action.
+
+    if ( lines( steps ) eq 0 ) .
+    else .
+
+      read table steps into steps_line index lines( steps ) .
+      if ( sy-subrc eq 0 ) .
+
+        read table steps_line-actions into actions_line index 1 .
+        if ( sy-subrc eq 0 ) .
+
+          fieldname = |DT{ field }|.
+          me->assign(
+            exporting
+              field = fieldname
+              value = actions_line-date
+            changing
+              line  = line
+          ).
+
+          fieldname = |TM{ field }|.
+          me->assign(
+            exporting
+              field = fieldname
+              value = actions_line-time
+            changing
+              line  = line
+          ).
+
+        endif .
+
+      endif .
+
+    endif .
+
+  endmethod .
+
   method get_data_refresh .
 
     me->get_data(
@@ -1302,7 +1437,6 @@ class class_report implementation.
         categoria    = i_categoria
         usuario      = i_usuario
         data         = i_data
-        data_produca = i_data_produca
     ).
 
   endmethod .                    "get_data_refresh
@@ -1345,8 +1479,8 @@ select-options:
   p_categ for  e070-korrdev,
   p_user  for  e070-as4user default sy-uname ,
   p_data  for  e070-as4date default sy-datum .
-parameters:
-  p_produ type e070-as4date .
+*parameters:
+*  p_produ type e070-as4date .
 selection-screen end of block b1.
 
 *--------------------------------------------------------------------*
@@ -1375,7 +1509,6 @@ start-of-selection .
       categoria    = p_categ[]
       usuario      = p_user[]
       data         = p_data[]
-      data_produca = p_produ
   ).
 
 
