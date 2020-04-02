@@ -745,7 +745,8 @@ class class_report implementation.
       lv_qtd_cont        type n length 4,
       lv_linhas          type n length 4,
       lv_controla_transp type c,
-      gv_nao_gera        type c length 1.
+      gv_nao_gera        type c length 1,
+      fieldname          type char10.
 
     field-symbols:
       <table> type standard table,
@@ -951,6 +952,25 @@ class class_report implementation.
             changing
               line  = <line>
           ) .
+
+          fieldname = |DT{ systemid }| .
+          me->assign(
+            exporting
+              field = fieldname
+              value = ''
+            changing
+              line  = <line>
+          ) .
+
+          fieldname = |TM{ systemid }| .
+          me->assign(
+            exporting
+              field = fieldname
+              value = ''
+            changing
+              line  = <line>
+          ) .
+
 
         endif.
 
