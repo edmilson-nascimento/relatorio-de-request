@@ -154,6 +154,16 @@ class class_report definition .
         !e070      type tt_e070
         !e07t      type tt_e07t .
 
+    methods set_request_data
+      importing
+        !e070      type e070
+        !e07t      type e07t
+        !status    type class_report=>ty_status
+        !tipo      type class_report=>ty_tipo
+        !categoria type class_report=>ty_categoria
+      changing
+        !line      type any .
+
     methods cria_coluna
       importing
         !fieldname    type lvc_fname
@@ -718,10 +728,10 @@ class class_report implementation.
     data:
       ls_tmscys          type ty_tmscsys,
       ls_e070            type e070,
+      ls_e07t            type e07t,
       ls_status          type ty_status,
       ls_tipo            type ty_tipo,
       ls_categoria       type ty_categoria,
-      ls_e07t            type e07t,
       settings           type ctslg_settings,
       systemid           type tstrfcofil-tarsystem,
       cofile             type ctslg_cofile,
@@ -757,57 +767,19 @@ class class_report implementation.
 
     loop at e070 into ls_e070 .
 
-      assign new_line->* to <line> .
-      check <line> is assigned .
 
-*     Request
-      me->assign(
-        exporting
-          field = 'TRKORR'
-          value = ls_e070-trkorr
-        changing
-          line  = <line>
-      ).
-
-*     Descricao da Request
+*     Acessando as tabelas internas da request
       read table e07t into ls_e07t
         with key trkorr = ls_e070-trkorr .
 
       if ( sy-subrc eq 0 ) .
-
-        me->assign(
-          exporting
-            field = 'DESCREQ'
-            value = ls_e07t-as4text
-          changing
-            line  = <line>
-        ).
-
       endif.
-
-*     Usuario da Request
-      me->assign(
-        exporting
-          field = 'AS4USER'
-          value = ls_e070-as4user
-        changing
-          line  = <line>
-      ).
 
 *     Tipo de Request
       read table tipo into ls_tipo
         with key tipo = ls_e070-trfunction .
 
       if ( sy-subrc eq 0 ) .
-
-        me->assign(
-          exporting
-            field = 'TRFUNCTION'
-            value = ls_tipo-desc
-          changing
-            line  = <line>
-        ).
-
       endif.
 
 *     Status da Request
@@ -815,39 +787,12 @@ class class_report implementation.
         with key status = ls_e070-trstatus .
 
       if ( sy-subrc eq 0 ) .
-
-        me->assign(
-          exporting
-            field = 'TRSTATUS'
-            value = ls_e070-trstatus
-          changing
-            line  = <line>
-        ).
-
       endif.
 
 *     Categoria da Request
       read table categoria into ls_categoria
         with key categoria = ls_e070-korrdev .
-
       if ( sy-subrc eq 0 ) .
-
-        me->assign(
-          exporting
-            field = 'KORRDEV'
-            value = ls_e070-korrdev
-          changing
-            line  = <line>
-        ).
-
-*        me->assign(
-*          exporting
-*            field = 'KORRDEV_TEXT'
-*            value = ls_categoria-desc
-*          changing
-*            line  = <line>
-*        ).
-
       endif .
 
 
@@ -861,6 +806,23 @@ class class_report implementation.
 
 
       loop at t_tmscsys into ls_tmscys .
+
+        assign new_line->* to <line> .
+        if ( <line> is not assigned ) .
+          exit .
+        endif .
+
+        me->set_request_data(
+          exporting
+            e070 = ls_e070
+            e07t = ls_e07t
+            tipo = ls_tipo
+            status = ls_status
+            categoria = ls_categoria
+          changing
+            line = <line>
+
+        ).
 
         systemid = ls_tmscys-sysnam .
 
@@ -1255,6 +1217,83 @@ class class_report implementation.
     endloop.
 
   endmethod.                    "set_text_output
+
+
+  method set_request_data .
+
+
+    if ( e070 is not initial ) and
+       ( e07t is not initial ) .
+
+*     Request
+      me->assign(
+        exporting
+          field = 'TRKORR'
+          value = e070-trkorr
+        changing
+          line  = line
+      ).
+
+*     Descricao da Request
+      me->assign(
+        exporting
+          field = 'DESCREQ'
+          value = e07t-as4text
+        changing
+          line  = line
+      ).
+
+*     Usuario da Request
+      me->assign(
+        exporting
+          field = 'AS4USER'
+          value = e070-as4user
+        changing
+          line  = line
+      ).
+
+*     Tipo de Request
+
+      me->assign(
+        exporting
+          field = 'TRFUNCTION'
+          value = tipo-desc
+        changing
+          line  = line
+      ).
+
+*     Status da Request
+      me->assign(
+        exporting
+          field = 'TRSTATUS'
+          value = e070-trstatus
+        changing
+          line  = line
+      ).
+
+
+*     Categoria da Request
+      me->assign(
+        exporting
+          field = 'KORRDEV'
+          value = e070-korrdev
+        changing
+          line  = line
+      ).
+
+*        me->assign(
+*          exporting
+*            field = 'KORRDEV_TEXT'
+*            value = ls_categoria-desc
+*          changing
+*            line  = <line>
+*        ).
+
+
+    endif .
+
+
+  endmethod .
 
 
   method link_click .
