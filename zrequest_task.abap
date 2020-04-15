@@ -115,6 +115,10 @@ class cl_alv definition .
       returning
         value(value) type abap_bool .
 
+    methods get_log
+      returning
+        value(value) type bapiret2_t .
+
     methods show .
 
   protected section .
@@ -131,6 +135,16 @@ class cl_alv definition .
       sorts      type ref to cl_salv_sorts,
       column     type ref to cl_salv_column_list,
       columns    type ref to cl_salv_columns_table.
+
+    methods message
+      importing
+        !type       type bapiret2-type
+        !id         type bapiret2-id
+        !number     type bapiret2-number
+        !message_v1 type bapiret2-message_v1 optional
+        !message_v2 type bapiret2-message_v2 optional
+        !message_v3 type bapiret2-message_v3 optional
+        !message_v4 type bapiret2-message_v4 optional .
 
 
 endclass .
@@ -316,7 +330,17 @@ class cl_alv implementation .
   method set_data .
 
     if ( lines( data ) eq 0 ) .
+
+      me->message(
+        type       = 'E'
+        id         = '>0'
+        number     = 000
+        message_v1 = 'Nao existem dados para exibicao.'
+      ).
+
     else .
+
+      refresh me->log .
 
       try .
 
@@ -351,6 +375,13 @@ class cl_alv implementation .
       endif .
 
     endif .
+
+  endmethod .
+
+
+  method get_log .
+
+    value = me->log .
 
   endmethod .
 
@@ -404,6 +435,34 @@ class cl_alv implementation .
 
   endmethod .
 
+
+  method message .
+
+    data:
+      msg type bapiret2 .
+
+    if ( type is not initial ) and
+       ( id is not initial ) .
+
+      msg =
+        value #(
+          type       = type
+          id         = id
+          number     = number
+          message_v1 = message_v1
+          message_v2 = message_v2
+          message_v3 = message_v3
+          message_v4 = message_v4
+
+        ).
+
+
+      append msg to me->log .
+
+    endif .
+
+  endmethod .
+
 endclass .
 
 
@@ -451,21 +510,32 @@ start-of-selection .
 
     create object alv .
 
-    if ( alv is bound ) .
-
-      alv->set_data(
-        changing
-          data = report->out_tab ) .
-
-
-      if ( alv->error( ) eq abap_false ) .
-
-        alv->show( ) .
-
-      endif .
-
-    endif .
-
   endif .
 
 end-of-selection.
+
+  if ( alv    is bound ) and
+     ( report is bound ) .
+
+    alv->set_data(
+      changing
+        data = report->out_tab
+    ) .
+
+    if ( alv->error( ) eq abap_false ) .
+
+      alv->show( ) .
+
+    else .
+
+      call function 'UDM_MESSAGE_SHOW'
+        exporting
+          et_message = alv->get_log( )
+*       importing
+*         ex_error   =
+        .
+
+    endif .
+
+
+  endif .
