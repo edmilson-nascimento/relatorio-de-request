@@ -508,11 +508,18 @@ start-of-selection .
 
   if ( report is bound ) .
 
-    create object alv .
+    report->get_data(
+      exporting
+        trkorr  = s_trkorr[]
+        as4user = s_as4use[]
+        as4date = s_as4dat[]
+    ).
 
   endif .
 
 end-of-selection.
+
+  create object alv .
 
   if ( alv    is bound ) and
      ( report is bound ) .
@@ -521,6 +528,8 @@ end-of-selection.
       changing
         data = report->out_tab
     ) .
+    
+    alv->
 
     if ( alv->error( ) eq abap_false ) .
 
