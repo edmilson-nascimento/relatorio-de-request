@@ -755,19 +755,28 @@ class class_report implementation.
 
     if table is not initial .
       assign table->* to <table>.
-      if <table> is assigned .
-        create data new_line like line of <table>.
-        assign new_line->* to <line>.
-      endif .
+*      if <table> is assigned .
+*        create data new_line like line of <table>.
+*        assign new_line->* to <line>.
+*      endif .
     endif .
 
     settings-point_to_missing_steps = abap_on .
     settings-detailed_depiction     = abap_on .
 
-    assign new_line->* to <line> .
+*    assign new_line->* to <line> .
+
 
     loop at e070 into ls_e070 .
 
+      if (  <table> is assigned ) .
+        create data new_line like line of <table>.
+        assign new_line->* to <line>.
+      endif .
+
+      if ( <line> is not assigned ) .
+        exit .
+      endif .
 
 *     Acessando as tabelas internas da request
       read table e07t into ls_e07t
@@ -979,6 +988,7 @@ class class_report implementation.
 
       insert <line> into table <table>.
       unassign <line> .
+*      clear new_line .
 
     endloop.
 
