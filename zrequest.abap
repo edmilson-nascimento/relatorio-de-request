@@ -1,11 +1,6 @@
 REPORT ZREQUEST.
 
 *--------------------------------------------------------------------*
-*- Anotações
-*--------------------------------------------------------------------*
-*- Coloca icone ou mesmo informação para Modificavel e etc
-
-*--------------------------------------------------------------------*
 *- Tipos SAP
 *--------------------------------------------------------------------*
 type-pools:
@@ -737,15 +732,7 @@ class class_report implementation.
       cofile             type ctslg_cofile,
       ls_systems         type ctslg_system,
       ls_steps           type ctslg_step,
-      ultimo_registro    type i,
-      ls_action          type ctslg_action,
       new_line           type ref to data,
-
-      lv_qtd_task        type n length 4,
-      lv_qtd_cont        type n length 4,
-      lv_linhas          type n length 4,
-      lv_controla_transp type c,
-      gv_nao_gera        type c length 1,
       fieldname          type char10.
 
     field-symbols:
