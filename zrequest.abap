@@ -742,16 +742,10 @@ class class_report implementation.
 
     if table is not initial .
       assign table->* to <table>.
-*      if <table> is assigned .
-*        create data new_line like line of <table>.
-*        assign new_line->* to <line>.
-*      endif .
     endif .
 
     settings-point_to_missing_steps = abap_on .
     settings-detailed_depiction     = abap_on .
-
-*    assign new_line->* to <line> .
 
 
     loop at e070 into ls_e070 .
