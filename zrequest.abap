@@ -429,7 +429,8 @@ class class_report implementation.
 
         lo_table->set_screen_status(
           pfstatus      = 'STANDARD_FULLSCREEN'
-          report        = sy-cprog
+          report        = 'SAPLKKBL'
+*         report        = sy-cprog
           set_functions = lo_table->c_functions_all ).
 
 
