@@ -123,7 +123,6 @@ class class_report definition .
       i_data         type trg_date,
       i_data_produca type datum.
 
-
     methods limpar_dados
       changing
         !e070   type tt_e070
