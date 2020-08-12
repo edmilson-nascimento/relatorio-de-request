@@ -255,7 +255,6 @@ endclass.                    "lcl_report DEFINITION
 class class_report implementation.
 
 
-
   method initial .
 
     data:
