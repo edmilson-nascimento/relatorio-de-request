@@ -1,303 +1,302 @@
 *&---------------------------------------------------------------------*
-*& Report ZREQUEST
+*& Report YTESTE
 *&---------------------------------------------------------------------*
 *&
 *&---------------------------------------------------------------------*
-REPORT zrequest.
+report yteste.
 
 
 *--------------------------------------------------------------------*
 *- Tipos SAP
 *--------------------------------------------------------------------*
-TYPE-POOLS:
+type-pools:
   sscr, vrm, ctslg, icon .
 
 *--------------------------------------------------------------------*
 *- Tabelas
 *--------------------------------------------------------------------*
-TABLES:
+tables:
   e070, trtarget.
 
 *----------------------------------------------------------------------*
 *       CLASS lcl_report DEFINITION
 *----------------------------------------------------------------------*
-CLASS class_report DEFINITION .
+class class_report definition .
 
-  PUBLIC SECTION.
+  public section.
 
-    TYPES:
-      BEGIN OF ty_tmscsys,
-        domnam TYPE tmscsys-domnam,
-        sysnam TYPE tmscsys-sysnam,
-        limbo  TYPE tmscsys-limbo,
-      END OF ty_tmscsys,
+    types:
+      begin of ty_tmscsys,
+        domnam type tmscsys-domnam,
+        sysnam type tmscsys-sysnam,
+        limbo  type tmscsys-limbo,
+      end of ty_tmscsys,
 
-      tmscsys_tab TYPE TABLE OF ty_tmscsys,
+      tmscsys_tab type table of ty_tmscsys,
 
-      BEGIN OF ty_status,
-        status TYPE trstatus,
-        descr  TYPE char60,
-      END OF ty_status,
+      begin of ty_status,
+        status type trstatus,
+        descr  type c length 60,
+      end of ty_status,
 
-      status_tab TYPE TABLE OF ty_status,
+      status_tab type table of ty_status,
 
-      BEGIN OF ty_tipo,
-        tipo TYPE trfunction,
-        desc TYPE c LENGTH 42,
-      END OF ty_tipo,
+      begin of ty_tipo,
+        tipo type trfunction,
+        desc type c length 42,
+      end of ty_tipo,
 
-      tipo_tab TYPE TABLE OF ty_tipo,
+      tipo_tab type table of ty_tipo,
 
-      BEGIN OF ty_categoria,
-        categoria TYPE trfunction,
-        desc      TYPE c LENGTH 60,
-      END OF ty_categoria,
+      begin of ty_categoria,
+        categoria type trfunction,
+        desc      type c length 60,
+      end of ty_categoria,
 
-      categoria_tab TYPE TABLE OF ty_categoria,
+      categoria_tab type table of ty_categoria,
 
-      BEGIN OF ty_r_sysnam,
-        sign   TYPE ddsign,
-        option TYPE ddoption,
-        low    TYPE trtarget-tarsystem,
-        high   TYPE trtarget-tarsystem,
-      END OF ty_r_sysnam,
+      begin of ty_r_sysnam,
+        sign   type ddsign,
+        option type ddoption,
+        low    type trtarget-tarsystem,
+        high   type trtarget-tarsystem,
+      end of ty_r_sysnam,
 
-      r_sysnam TYPE TABLE OF ty_r_sysnam,
+      r_sysnam type table of ty_r_sysnam,
 
-      BEGIN OF ty_r_status,
-        sign   TYPE ddsign,
-        option TYPE ddoption,
-        low    TYPE trstatus,
-        high   TYPE trstatus,
-      END OF ty_r_status,
+      begin of ty_r_status,
+        sign   type ddsign,
+        option type ddoption,
+        low    type trstatus,
+        high   type trstatus,
+      end of ty_r_status,
 
-      r_status TYPE TABLE OF ty_r_status.
+      r_status type table of ty_r_status.
 
-    CLASS-DATA:
-      gt_tmscsys  TYPE tmscsys_tab .
+    class-data:
+      gt_tmscsys  type tmscsys_tab .
 
-    DATA:
-      lo_table   TYPE REF TO cl_salv_table,
-      lo_events  TYPE REF TO cl_salv_events_table,
-      lo_display TYPE REF TO cl_salv_display_settings,
-      lo_sorts   TYPE REF TO cl_salv_sorts.
+    data:
+      lo_table   type ref to cl_salv_table,
+      lo_events  type ref to cl_salv_events_table,
+      lo_display type ref to cl_salv_display_settings,
+      lo_sorts   type ref to cl_salv_sorts.
 
-    CLASS-METHODS initial
-      CHANGING
-        ct_ambient TYPE r_sysnam .
+    class-methods initial
+      changing
+        ct_ambient type r_sysnam .
 
-    METHODS create_structure
-      IMPORTING
-        !it_ambient TYPE r_sysnam .
+    methods create_structure
+      importing
+        !it_ambient type r_sysnam .
 
-    METHODS get_data
-      IMPORTING
-        !it_ambient TYPE r_sysnam
-        !it_request TYPE /gc1/tab_rng_trkorr
-        !it_type    TYPE trg_char1
-        !it_status  TYPE r_status
-        !categoria  TYPE trg_char4
-        !it_user    TYPE wcft_cc_sel_range_user_tab
-        !it_date    TYPE trg_date .
+    methods get_data
+      importing
+        !it_ambient    type r_sysnam
+        !it_request    type /gc1/tab_rng_trkorr
+        !it_type       type trg_char1
+        !it_status     type r_status
+        !it_trfunction type trg_char4
+        !it_user       type wcft_cc_sel_range_user_tab
+        !it_date       type trg_date .
 
-    METHODS generate_output .
-
-
-  PROTECTED SECTION .
-
-    METHODS on_link_click
-      FOR EVENT if_salv_events_actions_table~link_click
-      OF cl_salv_events_table
-      IMPORTING row
-                column.
-
-    METHODS on_added_function
-      FOR EVENT if_salv_events_functions~added_function
-      OF cl_salv_events_table
-      IMPORTING e_salv_function.
-
-  PRIVATE SECTION .
-
-    DATA:
-      table          TYPE REF TO data,
-      ambiente       TYPE r_sysnam,
-      i_ordem        TYPE /gc1/tab_rng_trkorr,
-      i_tipo         TYPE trg_char1,
-      i_status       TYPE r_status,
-      i_categoria    TYPE trg_char4,
-      i_usuario      TYPE wcft_cc_sel_range_user_tab,
-      i_data         TYPE trg_date,
-      i_data_produca TYPE datum.
-
-    METHODS limpar_dados
-      CHANGING
-        !e070   TYPE tt_e070
-        !e07t   TYPE tt_e07t
-        !status TYPE status_tab
-        !tipo   TYPE tipo_tab .
-
-    METHODS carrega_descricao
-      CHANGING
-        !tipo      TYPE tipo_tab
-        !status    TYPE status_tab
-        !categoria TYPE categoria_tab .
-
-    METHODS seleciona_dados
-      IMPORTING
-        !ordem     TYPE /gc1/tab_rng_trkorr
-        !tipo      TYPE trg_char1
-        !status    TYPE r_status
-        !categoria TYPE trg_char4
-        !usuario   TYPE wcft_cc_sel_range_user_tab
-        !data      TYPE trg_date
-      CHANGING
-        !e070      TYPE tt_e070
-        !e07t      TYPE tt_e07t .
-
-    METHODS set_request_data
-      IMPORTING
-        !e070      TYPE e070
-        !e07t      TYPE e07t
-        !status    TYPE class_report=>ty_status
-        !tipo      TYPE class_report=>ty_tipo
-        !categoria TYPE class_report=>ty_categoria
-      CHANGING
-        !line      TYPE any .
-
-    METHODS cria_coluna
-      IMPORTING
-        !fieldname    TYPE lvc_fname
-        !outputlen    TYPE lvc_outlen
-        !ref_table    TYPE lvc_rtname
-        !ref_field    TYPE lvc_rfname
-        !text_l       TYPE lvc_s_fcat-scrtext_l OPTIONAL
-        !text_m       TYPE lvc_s_fcat-scrtext_m OPTIONAL
-        !text_s       TYPE lvc_s_fcat-scrtext_s OPTIONAL
-      CHANGING
-        !fieldcatalog TYPE lvc_t_fcat .
-
-    METHODS cria_coluna_ambiente
-      IMPORTING
-        !ambiente     TYPE class_report=>r_sysnam
-      CHANGING
-        !fieldcatalog TYPE lvc_t_fcat .
+    methods generate_output .
 
 
-    METHODS create_date_time
-      IMPORTING
-        !sysnam  TYPE sysname
-      CHANGING
-        !catalog TYPE lvc_t_fcat .
+  protected section .
 
-    METHODS monta_relatorio
-      IMPORTING
-        !e070      TYPE tt_e070
-        !status    TYPE status_tab
-        !tipo      TYPE tipo_tab
-        !categoria TYPE categoria_tab
-        !e07t      TYPE tt_e07t
-        !table     TYPE REF TO data
-      EXPORTING
-        !outtab    TYPE STANDARD TABLE .
+    methods on_link_click
+      for event if_salv_events_actions_table~link_click
+                  of cl_salv_events_table
+      importing row
+                  column .
 
-    METHODS atualiza_atributos
-      IMPORTING
-        !ambiente  TYPE r_sysnam
-        !ordem     TYPE /gc1/tab_rng_trkorr
-        !tipo      TYPE trg_char1
-        !status    TYPE r_status
-        !categoria TYPE trg_char4
-        !usuario   TYPE wcft_cc_sel_range_user_tab
-        !data      TYPE trg_date .
+    methods on_added_function
+      for event if_salv_events_functions~added_function
+                  of cl_salv_events_table
+      importing e_salv_function .
 
-    METHODS set_text
-      IMPORTING
-        !i_field       TYPE lvc_fname
-        !i_long_text   TYPE scrtext_l
-        !i_medium_text TYPE scrtext_m
-        !i_short_text  TYPE scrtext_s
-      CHANGING
-        !c_columns     TYPE REF TO cl_salv_columns_table
-        !c_column      TYPE REF TO cl_salv_column_list.
+  private section .
 
-    METHODS set_text_output
-      IMPORTING
-        !t_tmscsys TYPE tmscsys_tab
-      CHANGING
-        !table     TYPE REF TO cl_salv_table .
+    data:
+      go_data       type ref to data,
+      gt_ambient    type r_sysnam,
+      gt_request    type /gc1/tab_rng_trkorr,
+      gt_type       type trg_char1,
+      gt_status     type r_status,
+      gt_trfunction type trg_char4,
+      gt_user       type wcft_cc_sel_range_user_tab,
+      gt_date       type trg_date.
 
-    METHODS link_click
-      IMPORTING
-        !row    TYPE any
-        !column TYPE any .
+    methods clear_data
+      changing
+        !ct_e070   type tt_e070
+        !gt_e07t   type tt_e07t
+        !ct_status type status_tab
+        !ct_type   type tipo_tab .
 
-    METHODS process .
+    methods get_description
+      changing
+        !ct_type       type tipo_tab
+        !ct_status     type status_tab
+        !ct_trfunction type categoria_tab .
 
-    METHODS change_tmscsys
-      IMPORTING
-        !ambiente TYPE r_sysnam .
+    methods search_data
+      importing
+        !it_request    type /gc1/tab_rng_trkorr
+        !it_type       type trg_char1
+        !it_status     type r_status
+        !it_trfunction type trg_char4
+        !it_user       type wcft_cc_sel_range_user_tab
+        !it_date       type trg_date
+      changing
+        !ct_e070       type tt_e070
+        !ct_e07t       type tt_e07t .
 
-    METHODS assign
-      IMPORTING
-        !field TYPE any
-        !value TYPE any
-      CHANGING
-        !line  TYPE any .
+    methods set_request_data
+      importing
+        !e070      type e070
+        !e07t      type e07t
+        !status    type class_report=>ty_status
+        !tipo      type class_report=>ty_tipo
+        !categoria type class_report=>ty_categoria
+      changing
+        !line      type any .
 
-    METHODS assign_log
-      IMPORTING
-        !field TYPE any
-        !steps TYPE ctslg_steps
-      CHANGING
-        !line  TYPE any .
+    methods cria_coluna
+      importing
+        !fieldname    type lvc_fname
+        !outputlen    type lvc_outlen
+        !ref_table    type lvc_rtname
+        !ref_field    type lvc_rfname
+        !text_l       type lvc_s_fcat-scrtext_l optional
+        !text_m       type lvc_s_fcat-scrtext_m optional
+        !text_s       type lvc_s_fcat-scrtext_s optional
+      changing
+        !fieldcatalog type lvc_t_fcat .
 
-    METHODS get_data_refresh .
+    methods cria_coluna_ambiente
+      importing
+        !ambiente     type class_report=>r_sysnam
+      changing
+        !fieldcatalog type lvc_t_fcat .
 
-ENDCLASS.                    "lcl_report DEFINITION
+
+    methods create_date_time
+      importing
+        !iv_sysnam  type sysname
+      changing
+        !ct_catalog type lvc_t_fcat .
+
+    methods create_report
+      importing
+        !it_e070       type tt_e070
+        !it_status     type status_tab
+        !it_type       type tipo_tab
+        !it_trfunction type categoria_tab
+        !it_e07t       type tt_e07t
+        !table         type ref to data
+      exporting
+        !et_outtab     type standard table .
+
+    methods atualiza_atributos
+      importing
+        !ambiente  type r_sysnam
+        !ordem     type /gc1/tab_rng_trkorr
+        !tipo      type trg_char1
+        !status    type r_status
+        !categoria type trg_char4
+        !usuario   type wcft_cc_sel_range_user_tab
+        !data      type trg_date .
+
+    methods set_text
+      importing
+        !i_field       type lvc_fname
+        !i_long_text   type scrtext_l
+        !i_medium_text type scrtext_m
+        !i_short_text  type scrtext_s
+      changing
+        !c_columns     type ref to cl_salv_columns_table
+        !c_column      type ref to cl_salv_column_list.
+
+    methods set_text_output
+      importing
+        !t_tmscsys type tmscsys_tab
+      changing
+        !table     type ref to cl_salv_table .
+
+    methods link_click
+      importing
+        !row    type any
+        !column type any .
+
+    methods process .
+
+    methods change_tmscsys
+      importing
+        !ambiente type r_sysnam .
+
+    methods assign
+      importing
+        !field type any
+        !value type any
+      changing
+        !line  type any .
+
+    methods assign_log
+      importing
+        !field type any
+        !steps type ctslg_steps
+      changing
+        !line  type any .
+
+    methods get_data_refresh .
+
+endclass.                    "lcl_report DEFINITION
 
 *----------------------------------------------------------------------*
 *       CLASS lcl_report IMPLEMENTATION
 *----------------------------------------------------------------------*
-CLASS class_report IMPLEMENTATION.
+class class_report implementation.
 
 
-  METHOD initial .
+  method initial .
 
-    DATA:
-      ls_status   TYPE ty_r_status,
-      ls_sysnam   TYPE ty_r_sysnam,
-      ls_tmscsys  TYPE ty_tmscsys,
-      opt_list    TYPE sscr_opt_list,
-      ass         TYPE sscr_ass,
-      restriction TYPE sscr_restrict.
+    data:
+      ls_status   type ty_r_status,
+      ls_sysnam   type ty_r_sysnam,
+      ls_tmscsys  type ty_tmscsys,
+      opt_list    type sscr_opt_list,
+      ass         type sscr_ass,
+      restriction type sscr_restrict.
 
     ct_ambient =
-    VALUE #( LET s = rsmds_c_sign-including
+    value #( let s = rsmds_c_sign-including
                  o = rsmds_c_option-equal
-             IN sign   = s
+             in sign   = s
                 option = o
              ( low = 'D01' )
              ( low = 'Q01' )
              ( low = 'P01' ) ) .
 
     gt_tmscsys =
-      VALUE #( FOR a IN ct_ambient ( sysnam = a-low ) ) .
+      value #( for a in ct_ambient ( sysnam = a-low ) ) .
 
     restriction =
-      VALUE #( opt_list_tab = VALUE #( ( name       = 'OBJECTKEY1'
+      value #( opt_list_tab = value #( ( name       = 'OBJECTKEY1'
                                          options-eq = abap_on ) )
-               ass_tab      = VALUE #( ( kind    = 'S'
+               ass_tab      = value #( ( kind    = 'S'
                                          name    = 'S_AMB'
                                          sg_main = 'I'
                                          sg_addy = abap_off
                                          op_main = 'OBJECTKEY1' ) ) ) .
 
-    CALL FUNCTION 'SELECT_OPTIONS_RESTRICT'
-      EXPORTING
+    call function 'SELECT_OPTIONS_RESTRICT'
+      exporting
 *       program                =
         restriction            = restriction
 *       db                     = SPACE
-      EXCEPTIONS
+      exceptions
         too_late               = 1
         repeated               = 2
         selopt_without_options = 3
@@ -306,108 +305,109 @@ CLASS class_report IMPLEMENTATION.
         empty_option_list      = 6
         invalid_kind           = 7
         repeated_kind_a        = 8
-        OTHERS                 = 9.
+        others                 = 9.
 
-    IF ( sy-subrc EQ 0 ) .
-    ELSE .
-      MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
-            WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
-    ENDIF.
+    if ( sy-subrc eq 0 ) .
+    else .
+      message id sy-msgid type sy-msgty number sy-msgno
+            with sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+    endif.
 
 
-  ENDMETHOD .                    "initial
+  endmethod .                    "initial
 
-  METHOD get_data.
 
-    DATA:
-      gt_e070      TYPE TABLE OF e070,
-      gt_e07t      TYPE TABLE OF e07t,
-      gt_status    TYPE TABLE OF ty_status,
-      gt_tipo      TYPE TABLE OF ty_tipo,
-      gt_categoria TYPE TABLE OF ty_categoria,
-      lt_table     TYPE REF TO data.
+  method get_data.
 
-    me->limpar_dados(
-      CHANGING
-        e070    = gt_e070
-        e07t    = gt_e07t
-        status  = gt_status
-        tipo    = gt_tipo
+    data:
+      gt_e070      type table of e070,
+      gt_e07t      type table of e07t,
+      gt_status    type table of ty_status,
+      gt_tipo      type table of ty_tipo,
+      gt_categoria type table of ty_categoria,
+      lt_table     type ref to data.
+
+    me->clear_data(
+      changing
+        ct_e070    = gt_e070
+        gt_e07t    = gt_e07t
+        ct_status  = gt_status
+        ct_type    = gt_tipo
     ).
 
-    me->carrega_descricao(
-      CHANGING
-        tipo      = gt_tipo
-        status    = gt_status
-        categoria = gt_categoria
+    me->get_description(
+      changing
+        ct_type      = gt_tipo
+        ct_status    = gt_status
+        ct_trfunction = gt_categoria
     ).
 
-    me->seleciona_dados(
-      EXPORTING
-        ordem     = it_request
-        tipo      = it_type
-        status    = it_status
-        categoria = categoria
-        usuario   = it_user
-        data      = it_date
-      CHANGING
-        e070      = gt_e070
-        e07t      = gt_e07t
+    me->search_data(
+      exporting
+        it_request     = it_request
+        it_type      = it_type
+        it_status    = it_status
+        it_trfunction = it_trfunction
+        it_user   = it_user
+        it_date      = it_date
+      changing
+        ct_e070      = gt_e070
+        ct_e07t      = gt_e07t
     ).
 
-    me->monta_relatorio(
-      EXPORTING
-        e070      = gt_e070
-        status    = gt_status
-        tipo      = gt_tipo
-        categoria = gt_categoria
-        e07t      = gt_e07t
-        table     = table
+    me->create_report(
+      exporting
+        it_e070      = gt_e070
+        it_status    = gt_status
+        it_type      = gt_tipo
+        it_trfunction = gt_categoria
+        it_e07t      = gt_e07t
+        table     = go_data
     ).
 
     me->atualiza_atributos(
-      EXPORTING
+      exporting
         ambiente     = it_ambient
         ordem        = it_request
         tipo         = it_type
         status       = it_status
-        categoria    = categoria
+        categoria    = it_trfunction
         usuario      = it_user
         data         = it_date
     ) .
 
 
-  ENDMETHOD.                    "GET_DATA
+  endmethod.                    "GET_DATA
 
-  METHOD generate_output .
+  method generate_output .
 
-    DATA:
-      column  TYPE REF TO cl_salv_column_list,
-      columns TYPE REF TO cl_salv_columns_table.
-    FIELD-SYMBOLS:
-      <table> TYPE STANDARD TABLE .
-
-
-    IF table IS NOT INITIAL .
-      ASSIGN table->* TO <table>.
-    ENDIF .
-
-    CHECK <table> IS ASSIGNED .
+    data:
+      column  type ref to cl_salv_column_list,
+      columns type ref to cl_salv_columns_table.
+    field-symbols:
+      <table> type standard table .
 
 
-    TRY.
+    if go_data is not initial .
+      assign go_data->* to <table>.
+    endif .
 
-        CALL METHOD cl_salv_table=>factory
-          IMPORTING
+    check <table> is assigned .
+
+
+    try.
+
+        call method cl_salv_table=>factory
+          importing
             r_salv_table = lo_table
-          CHANGING
+          changing
             t_table      = <table>.
 
 
         lo_events = lo_table->get_event( ).
 
-        SET HANDLER me->on_link_click FOR lo_events.
-        SET HANDLER me->on_added_function FOR lo_events.
+        set handler me->on_link_click for lo_events.
+        set handler me->on_added_function for lo_events.
 
         lo_table->set_screen_status(
           pfstatus      = 'STANDARD_FULLSCREEN'
@@ -426,9 +426,9 @@ CLASS class_report IMPLEMENTATION.
         column->set_long_text( 'Tipo de request' ).
 
         me->set_text_output(
-          EXPORTING
+          exporting
             t_tmscsys = gt_tmscsys
-          CHANGING
+          changing
             table     = lo_table
         ).
 
@@ -444,212 +444,212 @@ CLASS class_report IMPLEMENTATION.
 
         lo_table->display( ).
 
-      CATCH cx_salv_msg .
-      CATCH cx_salv_not_found .
-      CATCH cx_salv_existing .
-      CATCH cx_salv_data_error .
-      CATCH cx_salv_object_not_found .
+      catch cx_salv_msg .
+      catch cx_salv_not_found .
+      catch cx_salv_existing .
+      catch cx_salv_data_error .
+      catch cx_salv_object_not_found .
 
-    ENDTRY.
+    endtry.
 
-  ENDMETHOD .                    "generate_output
+  endmethod .                    "generate_output
 
-  METHOD limpar_dados .
+  method clear_data .
 
-    FIELD-SYMBOLS:
-      <table> TYPE STANDARD TABLE .
+    field-symbols:
+      <table> type standard table .
 
-    FREE:
-      e070, e07t, status, tipo .
+    free:
+      ct_e070, gt_e07t, ct_status, ct_type .
 
-    IF table IS NOT INITIAL .
-      ASSIGN table->* TO <table>.
-      IF <table> IS ASSIGNED .
-        REFRESH:
+    if go_data is not initial .
+      assign go_data->* to <table>.
+      if <table> is assigned .
+        refresh:
           <table> .
-      ENDIF .
-    ENDIF .
+      endif .
+    endif .
 
-  ENDMETHOD .                    "limpar_dados
+  endmethod .                    "limpar_dados
 
-  METHOD carrega_descricao .
+  method get_description .
 
-    DATA:
-      lt_list      TYPE TABLE OF vrm_value,
-      ls_list      TYPE          vrm_value,
-      ls_tipo      TYPE ty_tipo,
-      ls_status    TYPE ty_status,
-      ls_categoria TYPE ty_categoria.
+    data:
+      lt_list      type table of vrm_value,
+      ls_list      type          vrm_value,
+      ls_tipo      type ty_tipo,
+      ls_status    type ty_status,
+      ls_categoria type ty_categoria.
 
-    CALL FUNCTION 'FICO_DOMAIN_VALUES_GET'
-      EXPORTING
+    call function 'FICO_DOMAIN_VALUES_GET'
+      exporting
         i_table_name = 'E070'
         i_field_name = 'TRFUNCTION'
         i_langu      = sy-langu
-      IMPORTING
+      importing
         e_t_list     = lt_list.
 
-    LOOP AT lt_list INTO ls_list .
+    loop at lt_list into ls_list .
       ls_tipo-tipo = ls_list-key .
       ls_tipo-desc = ls_list-text .
-      APPEND ls_tipo TO tipo .
-      CLEAR  ls_tipo .
-    ENDLOOP.
+      append ls_tipo to ct_type .
+      clear  ls_tipo .
+    endloop.
 
-    SORT tipo ASCENDING BY tipo.
+    sort ct_type ascending by tipo.
 
-    REFRESH lt_list .
-    CLEAR   ls_list .
+    refresh lt_list .
+    clear   ls_list .
 
-    CALL FUNCTION 'FICO_DOMAIN_VALUES_GET'
-      EXPORTING
+    call function 'FICO_DOMAIN_VALUES_GET'
+      exporting
         i_table_name = 'E070'
         i_field_name = 'TRSTATUS'
         i_langu      = sy-langu
-      IMPORTING
+      importing
         e_t_list     = lt_list.
 
-    LOOP AT lt_list INTO ls_list.
+    loop at lt_list into ls_list.
       ls_status-status = ls_list-key .
       ls_status-descr = ls_list-text .
-      APPEND ls_status TO status.
-      CLEAR  ls_status .
-    ENDLOOP.
+      append ls_status to ct_status.
+      clear  ls_status .
+    endloop.
 
-    SORT status ASCENDING BY status.
+    sort ct_status ascending by status.
 
-    REFRESH lt_list .
-    CLEAR   ls_list .
+    refresh lt_list .
+    clear   ls_list .
 
-    CALL FUNCTION 'FICO_DOMAIN_VALUES_GET'
-      EXPORTING
+    call function 'FICO_DOMAIN_VALUES_GET'
+      exporting
         i_table_name = 'E070'
         i_field_name = 'KORRDEV'
         i_langu      = sy-langu
-      IMPORTING
+      importing
         e_t_list     = lt_list.
 
-    LOOP AT lt_list INTO ls_list.
+    loop at lt_list into ls_list.
       ls_categoria-categoria = ls_list-key .
       ls_categoria-desc      = ls_list-text .
-      APPEND ls_categoria TO categoria .
-      CLEAR  ls_categoria .
-    ENDLOOP.
+      append ls_categoria to ct_trfunction .
+      clear  ls_categoria .
+    endloop.
 
-    SORT categoria ASCENDING BY categoria .
+    sort ct_trfunction ascending by categoria .
 
-    REFRESH lt_list .
-    CLEAR   ls_list .
-
-
-  ENDMETHOD .                    "carrega_descricao
+    refresh lt_list .
+    clear   ls_list .
 
 
-  METHOD seleciona_dados .
-
-    SELECT *
-      FROM e070
-      INTO TABLE e070
-     WHERE trkorr     IN ordem
-       AND trfunction IN tipo
-       AND trstatus   IN status
-       AND korrdev    IN categoria
-       AND as4user    IN usuario
-       AND as4date    IN data
-       AND strkorr    EQ space.
-    IF sy-subrc NE 0 .
-
-    ENDIF.
-
-    DELETE e070 WHERE trkorr IS INITIAL .
-
-    IF lines( e070 ) EQ 0 .
-
-    ELSE .
-
-      SELECT *
-        FROM e07t
-        INTO TABLE e07t
-         FOR ALL ENTRIES IN e070
-       WHERE trkorr EQ e070-trkorr
-         AND ( langu  EQ 'P' OR langu  EQ 'E' ).
-
-    ENDIF.
-
-  ENDMETHOD.                    "seleciona_dados
+  endmethod .                    "carrega_descricao
 
 
-  METHOD create_structure .
+  method search_data .
 
-    DATA:
-      lt_fieldcat TYPE lvc_t_fcat,
-      ls_tmscsys  TYPE ty_tmscsys,
-      fieldname   TYPE lvc_fname.
+    select *
+      from e070
+      into table ct_e070
+     where trkorr     in it_request
+       and trfunction in it_type
+       and trstatus   in it_status
+       and korrdev    in it_trfunction
+       and as4user    in it_user
+       and as4date    in it_date
+       and strkorr    eq space.
+    if sy-subrc ne 0 .
 
-    FIELD-SYMBOLS:
-      <fs_line>  TYPE any .
+    endif.
+
+    delete ct_e070 where trkorr is initial .
+
+    if lines( ct_e070 ) eq 0 .
+
+    else .
+
+      select *
+        from e07t
+        into table ct_e07t
+         for all entries in ct_e070
+       where trkorr eq ct_e070-trkorr
+         and ( langu  eq 'P' or langu  eq 'E' ).
+
+    endif.
+
+  endmethod.                    "seleciona_dados
+
+
+  method create_structure .
+
+    data:
+      lt_fieldcat type lvc_t_fcat,
+      ls_tmscsys  type ty_tmscsys,
+      fieldname   type lvc_fname.
+
+    field-symbols:
+      <fs_line>  type any .
 
     me->change_tmscsys( ambiente = it_ambient ).
 
     me->cria_coluna(
-      EXPORTING
+      exporting
         fieldname    = 'TRKORR'
         outputlen    = 20
         ref_table    = 'E071'
         ref_field    = 'TRKORR'
-      CHANGING
+      changing
         fieldcatalog = lt_fieldcat
     ).
 
     me->cria_coluna(
-      EXPORTING
+      exporting
         fieldname    = 'DESCREQ'
         outputlen    = 60
         ref_table    = 'E07T'
         ref_field    = 'AS4TEXT'
-      CHANGING
+      changing
         fieldcatalog = lt_fieldcat
     ).
 
     me->cria_coluna(
-      EXPORTING
+      exporting
         fieldname    = 'AS4USER'
         outputlen    = 12
         ref_table    = 'E070'
         ref_field    = 'AS4USER'
-      CHANGING
+      changing
         fieldcatalog = lt_fieldcat
     ).
 
     me->cria_coluna(
-      EXPORTING
+      exporting
         fieldname    = 'TRFUNCTION'
         outputlen    = 42
         ref_table    = ''
         ref_field    = ''
 *       ref_table    = 'E070'
 *       ref_field    = 'TRFUNCTION'
-      CHANGING
+      changing
         fieldcatalog = lt_fieldcat
     ).
 
     me->cria_coluna(
-      EXPORTING
+      exporting
         fieldname    = 'TRSTATUS'
         outputlen    = 1
         ref_table    = 'E070'
         ref_field    = 'TRSTATUS'
-      CHANGING
+      changing
         fieldcatalog = lt_fieldcat
     ).
 
     me->cria_coluna(
-      EXPORTING
+      exporting
         fieldname    = 'KORRDEV'
         outputlen    = 4
         ref_table    = 'E070'
         ref_field    = 'KORRDEV'
-      CHANGING
+      changing
         fieldcatalog = lt_fieldcat
     ).
 
@@ -673,127 +673,127 @@ CLASS class_report IMPLEMENTATION.
 *    ).
 
     me->cria_coluna_ambiente(
-      EXPORTING
+      exporting
         ambiente     = it_ambient
-      CHANGING
+      changing
         fieldcatalog = lt_fieldcat
     ).
 
-    CALL METHOD cl_alv_table_create=>create_dynamic_table
-      EXPORTING
+    call method cl_alv_table_create=>create_dynamic_table
+      exporting
 *       i_style_table             =     " Add Style Table
         it_fieldcatalog           = lt_fieldcat
 *       i_length_in_byte          =     " Boolean Variable (X=True, Space=False)
-      IMPORTING
+      importing
 *       ep_table                  = new_table
-        ep_table                  = table
+        ep_table                  = go_data
 *       e_style_fname             =     " ALV Control: Field Name of Internal Table Field
-      EXCEPTIONS
+      exceptions
         generate_subpool_dir_full = 1
-        OTHERS                    = 2.
+        others                    = 2.
 
-    IF sy-subrc EQ 0 .
+    if sy-subrc eq 0 .
 
-    ELSE .
+    else .
 
-    ENDIF.
+    endif.
 
-  ENDMETHOD .                    "cria_tabela
+  endmethod .                    "cria_tabela
 
 
-  METHOD monta_relatorio .
+  method create_report .
 
-    DATA:
-      ls_tmscys    TYPE ty_tmscsys,
-      ls_e070      TYPE e070,
-      ls_e07t      TYPE e07t,
-      ls_status    TYPE ty_status,
-      ls_tipo      TYPE ty_tipo,
-      ls_categoria TYPE ty_categoria,
-      settings     TYPE ctslg_settings,
-      systemid     TYPE tstrfcofil-tarsystem,
-      cofile       TYPE ctslg_cofile,
-      ls_systems   TYPE ctslg_system,
-      ls_steps     TYPE ctslg_step,
-      new_line     TYPE REF TO data,
-      fieldname    TYPE char10.
+    data:
+      ls_tmscys    type ty_tmscsys,
+      ls_e070      type e070,
+      ls_e07t      type e07t,
+      ls_status    type ty_status,
+      ls_tipo      type ty_tipo,
+      ls_categoria type ty_categoria,
+      settings     type ctslg_settings,
+      systemid     type tstrfcofil-tarsystem,
+      cofile       type ctslg_cofile,
+      ls_systems   type ctslg_system,
+      ls_steps     type ctslg_step,
+      new_line     type ref to data,
+      fieldname    type char10.
 
-    FIELD-SYMBOLS:
-      <table> TYPE STANDARD TABLE,
-      <line>  TYPE any,
-      <field> TYPE any.
+    field-symbols:
+      <table> type standard table,
+      <line>  type any,
+      <field> type any.
 
-    IF table IS NOT INITIAL .
-      ASSIGN table->* TO <table>.
-    ENDIF .
+    if table is not initial .
+      assign table->* to <table>.
+    endif .
 
     settings-point_to_missing_steps = abap_on .
     settings-detailed_depiction     = abap_on .
 
 
-    LOOP AT e070 INTO ls_e070 .
+    loop at it_e070 into ls_e070 .
 
-      IF (  <table> IS ASSIGNED ) .
-        CREATE DATA new_line LIKE LINE OF <table>.
-        ASSIGN new_line->* TO <line>.
-      ENDIF .
+      if (  <table> is assigned ) .
+        create data new_line like line of <table>.
+        assign new_line->* to <line>.
+      endif .
 
-      IF ( <line> IS NOT ASSIGNED ) .
-        EXIT .
-      ENDIF .
+      if ( <line> is not assigned ) .
+        exit .
+      endif .
 
 *     Acessando as tabelas internas da request
-      READ TABLE e07t INTO ls_e07t
-        WITH KEY trkorr = ls_e070-trkorr .
+      read table it_e07t into ls_e07t
+        with key trkorr = ls_e070-trkorr .
 
-      IF ( sy-subrc EQ 0 ) .
-      ENDIF.
+      if ( sy-subrc eq 0 ) .
+      endif.
 
 *     Tipo de Request
-      READ TABLE tipo INTO ls_tipo
-        WITH KEY tipo = ls_e070-trfunction .
+      read table it_type into ls_tipo
+        with key tipo = ls_e070-trfunction .
 
-      IF ( sy-subrc EQ 0 ) .
-      ENDIF.
+      if ( sy-subrc eq 0 ) .
+      endif.
 
 *     Status da Request
-      READ TABLE status INTO ls_status
-        WITH KEY status = ls_e070-trstatus .
+      read table it_status into ls_status
+        with key status = ls_e070-trstatus .
 
-      IF ( sy-subrc EQ 0 ) .
-      ENDIF.
+      if ( sy-subrc eq 0 ) .
+      endif.
 
 *     Categoria da Request
-      READ TABLE categoria INTO ls_categoria
-        WITH KEY categoria = ls_e070-korrdev .
-      IF ( sy-subrc EQ 0 ) .
-      ENDIF .
+      read table it_trfunction into ls_categoria
+        with key categoria = ls_e070-korrdev .
+      if ( sy-subrc eq 0 ) .
+      endif .
 
 
-      CALL FUNCTION 'TR_READ_GLOBAL_INFO_OF_REQUEST'
-        EXPORTING
+      call function 'TR_READ_GLOBAL_INFO_OF_REQUEST'
+        exporting
           iv_trkorr   = ls_e070-trkorr
           iv_dir_type = 'T'
           is_settings = settings
-        IMPORTING
+        importing
           es_cofile   = cofile.
 
 
-      LOOP AT gt_tmscsys INTO ls_tmscys .
+      loop at gt_tmscsys into ls_tmscys .
 
-        ASSIGN new_line->* TO <line> .
-        IF ( <line> IS NOT ASSIGNED ) .
-          EXIT .
-        ENDIF .
+        assign new_line->* to <line> .
+        if ( <line> is not assigned ) .
+          exit .
+        endif .
 
         me->set_request_data(
-          EXPORTING
+          exporting
             e070 = ls_e070
             e07t = ls_e07t
             tipo = ls_tipo
             status = ls_status
             categoria = ls_categoria
-          CHANGING
+          changing
             line = <line>
 
         ).
@@ -804,367 +804,367 @@ CLASS class_report IMPLEMENTATION.
 *       Para os demais ambientes, sera "Importação encerrada"
 
 *       Buscando log espeficico de cada Sistema
-        READ TABLE cofile-systems INTO ls_systems
-                                  WITH KEY systemid = systemid .
-        IF ( sy-subrc EQ 0 ) .
+        read table cofile-systems into ls_systems
+                                  with key systemid = systemid .
+        if ( sy-subrc eq 0 ) .
 
 *         Verificando se houve algum erro
-          READ TABLE ls_systems-steps INTO ls_steps
-            WITH KEY rc = 8 .
-          IF ( sy-subrc EQ 0 ) .
+          read table ls_systems-steps into ls_steps
+            with key rc = 8 .
+          if ( sy-subrc eq 0 ) .
 
             me->assign(
-              EXPORTING
+              exporting
                 field = systemid
                 value = icon_led_red
-              CHANGING
+              changing
                 line  = <line>
             ).
 
             me->assign_log(
-              EXPORTING
+              exporting
                 field  = systemid
                 steps  = ls_systems-steps
-              CHANGING
+              changing
                 line   = <line>
             ).
 
-          ELSE.
+          else.
 
 *           Verificando se houve algum warning
-            READ TABLE ls_systems-steps INTO ls_steps
-              WITH KEY rc = 4 .
-            IF ( sy-subrc EQ 0 ) .
+            read table ls_systems-steps into ls_steps
+              with key rc = 4 .
+            if ( sy-subrc eq 0 ) .
 
               me->assign(
-                EXPORTING
+                exporting
                   field = systemid
                   value = icon_led_yellow
-                CHANGING
+                changing
                   line  = <line>
               ).
 
               me->assign_log(
-                EXPORTING
+                exporting
                   field  = systemid
                   steps  = ls_systems-steps
-                CHANGING
+                changing
                   line   = <line>
               ).
 
-            ELSE.
+            else.
 
 *             Verifica a opção de Exportação (significa que é sistema de origem DEV)
-              READ TABLE ls_systems-steps INTO ls_steps
-                WITH KEY stepid = 'E' .
-              IF (  sy-subrc EQ 0 ) .
+              read table ls_systems-steps into ls_steps
+                with key stepid = 'E' .
+              if (  sy-subrc eq 0 ) .
 
                 me->assign(
-                  EXPORTING
+                  exporting
                     field = systemid
                     value = icon_led_green
-                  CHANGING
+                  changing
                     line  = <line>
                 ).
 
                 me->assign_log(
-                  EXPORTING
+                  exporting
                     field  = systemid
                     steps  = ls_systems-steps
-                  CHANGING
+                  changing
                     line   = <line>
                 ).
 
-              ELSE.
+              else.
 
 *               Verificando se a opção Importação esta aplicada
-                READ TABLE ls_systems-steps INTO ls_steps
-                                            WITH KEY stepid = 'I' .
-                IF ( sy-subrc EQ 0 ) .
+                read table ls_systems-steps into ls_steps
+                                            with key stepid = 'I' .
+                if ( sy-subrc eq 0 ) .
 
                   me->assign(
-                    EXPORTING
+                    exporting
                       field = systemid
                       value = icon_led_green
-                    CHANGING
+                    changing
                       line  = <line>
                   ) .
 
                   me->assign_log(
-                    EXPORTING
+                    exporting
                       field  = systemid
                       steps  = ls_systems-steps
-                    CHANGING
+                    changing
                       line   = <line>
                   ).
 
-                ELSE.
+                else.
 
                   me->assign(
-                    EXPORTING
+                    exporting
                       field = systemid
                       value = icon_wd_radio_button_empty
-                    CHANGING
+                    changing
                       line  = <line>
                   ).
 
-                ENDIF.
+                endif.
 
-              ENDIF .
+              endif .
 
-            ENDIF .
+            endif .
 
-          ENDIF.
+          endif.
 
-        ELSE.
+        else.
 
           me->assign(
-            EXPORTING
+            exporting
               field = systemid
               value = icon_wd_radio_button_empty
-            CHANGING
+            changing
               line  = <line>
           ) .
 
           fieldname = |DT{ systemid }| .
           me->assign(
-            EXPORTING
+            exporting
               field = fieldname
               value = ''
-            CHANGING
+            changing
               line  = <line>
           ) .
 
           fieldname = |TM{ systemid }| .
           me->assign(
-            EXPORTING
+            exporting
               field = fieldname
               value = ''
-            CHANGING
+            changing
               line  = <line>
           ) .
 
 
-        ENDIF.
+        endif.
 
-      ENDLOOP.
+      endloop.
 
 
-      INSERT <line> INTO TABLE <table>.
-      UNASSIGN <line> .
+      insert <line> into table <table>.
+      unassign <line> .
 *      clear new_line .
 
-    ENDLOOP.
+    endloop.
 
-    IF lines( <table>[] ) EQ 0 .
-    ELSE .
-      APPEND LINES OF <table> TO outtab .
-    ENDIF .
+    if lines( <table>[] ) eq 0 .
+    else .
+      append lines of <table> to et_outtab .
+    endif .
 
-  ENDMETHOD .                    "monta_relatorio
+  endmethod .                    "monta_relatorio
 
 
-  METHOD cria_coluna .
+  method cria_coluna .
 
-    DATA:
-      line TYPE lvc_s_fcat .
+    data:
+      line type lvc_s_fcat .
 
     line-fieldname = fieldname .
     line-outputlen = outputlen .
     line-ref_table = ref_table .
     line-ref_field = ref_field .
 
-    IF ( text_l IS NOT INITIAL ) .
+    if ( text_l is not initial ) .
       line-scrtext_l = text_l .
-    ENDIF .
-    IF ( text_m IS NOT INITIAL ) .
+    endif .
+    if ( text_m is not initial ) .
       line-scrtext_m = text_m .
-    ENDIF .
-    IF ( text_s IS NOT INITIAL ) .
+    endif .
+    if ( text_s is not initial ) .
       line-scrtext_s = text_s .
-    ENDIF .
+    endif .
 
-    APPEND line TO fieldcatalog.
-    CLEAR  line .
+    append line to fieldcatalog.
+    clear  line .
 
-  ENDMETHOD.                    "cria_coluna
+  endmethod.                    "cria_coluna
 
 
-  METHOD cria_coluna_ambiente .
+  method cria_coluna_ambiente .
 
-    DATA:
-      fieldname TYPE lvc_fname .
+    data:
+      fieldname type lvc_fname .
 
 *  Verificando os ambiente passados como parametro
-    IF ( lines( ambiente ) EQ 0 ) .
+    if ( lines( ambiente ) eq 0 ) .
 
-    ELSE .
+    else .
 
 
-      LOOP AT gt_tmscsys INTO DATA(line_tmscsys) .
+      loop at gt_tmscsys into data(line_tmscsys) .
 
         fieldname = line_tmscsys-sysnam .
         me->cria_coluna(
-          EXPORTING
+          exporting
             fieldname    = fieldname
             outputlen    = 10
             ref_table    = ''
             ref_field    = ''
-          CHANGING
+          changing
             fieldcatalog = fieldcatalog
         ).
 
         fieldname = |DT{ line_tmscsys-sysnam }| .
         me->cria_coluna(
-          EXPORTING
+          exporting
             fieldname    = fieldname
             outputlen    = 10
             ref_table    = 'SYST'
             ref_field    = 'DATUM'
-          CHANGING
+          changing
             fieldcatalog = fieldcatalog
         ).
 
         fieldname = |TM{ line_tmscsys-sysnam }| .
         me->cria_coluna(
-          EXPORTING
+          exporting
             fieldname    = fieldname
             outputlen    = 10
             ref_table    = 'SYST'
             ref_field    = 'UZEIT'
-          CHANGING
+          changing
             fieldcatalog = fieldcatalog
         ).
 
-      ENDLOOP .
+      endloop .
 
-    ENDIF .
-
-
-  ENDMETHOD .
+    endif .
 
 
-  METHOD create_date_time .
+  endmethod .
 
-    DATA:
-      text_l TYPE lvc_s_fcat-scrtext_l,
-      text_m TYPE lvc_s_fcat-scrtext_m,
-      text_s TYPE lvc_s_fcat-scrtext_s.
 
-    IF ( sysnam IS INITIAL ) .
-    ELSE .
+  method create_date_time .
 
-      text_l = text_m = text_s = sysnam .
+    data:
+      text_l type lvc_s_fcat-scrtext_l,
+      text_m type lvc_s_fcat-scrtext_m,
+      text_s type lvc_s_fcat-scrtext_s.
+
+    if ( iv_sysnam is initial ) .
+    else .
+
+      text_l = text_m = text_s = iv_sysnam .
 
       me->cria_coluna(
-        EXPORTING
-          fieldname    = |AS4DATE_{ sysnam }|
+        exporting
+          fieldname    = |AS4DATE_{ iv_sysnam }|
           outputlen    = 8
           ref_table    = 'E070'
           ref_field    = 'AS4DATE'
           text_l       = text_l
           text_m       = text_m
           text_s       = text_s
-        CHANGING
-          fieldcatalog = catalog
+        changing
+          fieldcatalog = ct_catalog
       ).
 
 
       me->cria_coluna(
-        EXPORTING
-          fieldname    = |AS4TIME_{ sysnam }|
+        exporting
+          fieldname    = |AS4TIME_{ iv_sysnam }|
           outputlen    = 6
           ref_table    = 'E070'
           ref_field    = 'AS4TIME'
           text_l       = text_l
           text_m       = text_m
           text_s       = text_s
-        CHANGING
-          fieldcatalog = catalog
+        changing
+          fieldcatalog = ct_catalog
       ).
 
-    ENDIF .
+    endif .
 
-  ENDMETHOD .
+  endmethod .
 
-  METHOD atualiza_atributos .
+  method atualiza_atributos .
 
-    IF lines( i_ordem ) EQ 0 .
-      IF lines( ordem ) EQ 0 .
-      ELSE .
-        APPEND LINES OF ordem TO i_ordem .
-      ENDIF .
-    ELSE .
-    ENDIF .
+    if lines( gt_request ) eq 0 .
+      if lines( ordem ) eq 0 .
+      else .
+        append lines of ordem to gt_request .
+      endif .
+    else .
+    endif .
 
-    IF lines( i_tipo ) EQ 0 .
-      IF lines( tipo ) EQ 0 .
-      ELSE .
-        APPEND LINES OF tipo TO i_tipo .
-      ENDIF .
-    ELSE .
-    ENDIF .
+    if lines( gt_type ) eq 0 .
+      if lines( tipo ) eq 0 .
+      else .
+        append lines of tipo to gt_type .
+      endif .
+    else .
+    endif .
 
-    IF lines( i_status ) EQ 0 .
-      IF lines( status ) EQ 0 .
-      ELSE .
-        APPEND LINES OF status TO i_status .
-      ENDIF .
-    ELSE .
-    ENDIF .
+    if lines( gt_status ) eq 0 .
+      if lines( status ) eq 0 .
+      else .
+        append lines of status to gt_status .
+      endif .
+    else .
+    endif .
 
-    IF lines( i_categoria ) EQ 0 .
-      IF lines( categoria ) EQ 0 .
-      ELSE .
-        APPEND LINES OF categoria TO i_categoria .
-      ENDIF .
-    ELSE .
-    ENDIF .
+    if lines( gt_trfunction ) eq 0 .
+      if lines( categoria ) eq 0 .
+      else .
+        append lines of categoria to gt_trfunction .
+      endif .
+    else .
+    endif .
 
-    IF lines( i_usuario ) EQ 0 .
-      IF lines( usuario ) EQ 0 .
-      ELSE .
-        APPEND LINES OF usuario TO i_usuario .
-      ENDIF .
-    ELSE .
-    ENDIF .
+    if lines( gt_user ) eq 0 .
+      if lines( usuario ) eq 0 .
+      else .
+        append lines of usuario to gt_user .
+      endif .
+    else .
+    endif .
 
-    IF lines( i_data ) EQ 0 .
-      IF lines( data ) EQ 0 .
-      ELSE .
-        APPEND LINES OF data TO i_data .
-      ENDIF .
-    ELSE .
-    ENDIF .
+    if lines( gt_date ) eq 0 .
+      if lines( data ) eq 0 .
+      else .
+        append lines of data to gt_date .
+      endif .
+    else .
+    endif .
 
-  ENDMETHOD .                    "atualiza_atributos
+  endmethod .                    "atualiza_atributos
 
-  METHOD set_text .
+  method set_text .
 
-    TRY.
+    try.
         c_column ?= c_columns->get_column( i_field ).
         c_column->set_short_text( i_short_text ).
         c_column->set_medium_text( i_medium_text ).
         c_column->set_long_text( i_long_text ).
-      CATCH cx_salv_not_found .
-    ENDTRY .
+      catch cx_salv_not_found .
+    endtry .
 
-  ENDMETHOD .                    "set_text
+  endmethod .                    "set_text
 
-  METHOD set_text_output .
+  method set_text_output .
 
-    DATA:
-      line        TYPE ty_tmscsys,
-      field       TYPE lvc_fname,
-      long_text   TYPE scrtext_l,
-      medium_text TYPE scrtext_m,
-      short_text  TYPE scrtext_s,
-      column      TYPE REF TO cl_salv_column_list,
-      columns     TYPE REF TO cl_salv_columns_table.
+    data:
+      line        type ty_tmscsys,
+      field       type lvc_fname,
+      long_text   type scrtext_l,
+      medium_text type scrtext_m,
+      short_text  type scrtext_s,
+      column      type ref to cl_salv_column_list,
+      columns     type ref to cl_salv_columns_table.
 
     columns = table->get_columns( ).
 
-    LOOP AT t_tmscsys INTO line .
+    loop at t_tmscsys into line .
 
       field       = line-sysnam .
       long_text   = line-sysnam .
@@ -1172,12 +1172,12 @@ CLASS class_report IMPLEMENTATION.
       short_text  = line-sysnam .
 
       me->set_text(
-        EXPORTING
+        exporting
           i_field       = field
           i_long_text   = long_text
           i_medium_text = medium_text
           i_short_text  = short_text
-        CHANGING
+        changing
           c_columns     = columns
           c_column      = column
       ).
@@ -1185,12 +1185,12 @@ CLASS class_report IMPLEMENTATION.
       field = |DT{ line-sysnam }| .
       long_text = medium_text = short_text = |Data({ line-sysnam })| .
       me->set_text(
-        EXPORTING
+        exporting
           i_field       = field
           i_long_text   = long_text
           i_medium_text = medium_text
           i_short_text  = short_text
-        CHANGING
+        changing
           c_columns     = columns
           c_column      = column
       ).
@@ -1198,80 +1198,80 @@ CLASS class_report IMPLEMENTATION.
       field = |TM{ line-sysnam }| .
       long_text = medium_text = short_text = |Hora({ line-sysnam })| .
       me->set_text(
-        EXPORTING
+        exporting
           i_field       = field
           i_long_text   = long_text
           i_medium_text = medium_text
           i_short_text  = short_text
-        CHANGING
+        changing
           c_columns     = columns
           c_column      = column
       ).
 
-    ENDLOOP.
+    endloop.
 
-  ENDMETHOD.                    "set_text_output
-
-
-  METHOD set_request_data .
+  endmethod.                    "set_text_output
 
 
-    IF ( e070 IS NOT INITIAL ) AND
-       ( e07t IS NOT INITIAL ) .
+  method set_request_data .
+
+
+    if ( e070 is not initial ) and
+       ( e07t is not initial ) .
 
 *     Request
       me->assign(
-        EXPORTING
+        exporting
           field = 'TRKORR'
           value = e070-trkorr
-        CHANGING
+        changing
           line  = line
       ).
 
 *     Descricao da Request
       me->assign(
-        EXPORTING
+        exporting
           field = 'DESCREQ'
           value = e07t-as4text
-        CHANGING
+        changing
           line  = line
       ).
 
 *     Usuario da Request
       me->assign(
-        EXPORTING
+        exporting
           field = 'AS4USER'
           value = e070-as4user
-        CHANGING
+        changing
           line  = line
       ).
 
 *     Tipo de Request
 
       me->assign(
-        EXPORTING
+        exporting
           field = 'TRFUNCTION'
           value = tipo-desc
-        CHANGING
+        changing
           line  = line
       ).
 
 *     Status da Request
       me->assign(
-        EXPORTING
+        exporting
           field = 'TRSTATUS'
           value = e070-trstatus
-        CHANGING
+        changing
           line  = line
       ).
 
 
 *     Categoria da Request
       me->assign(
-        EXPORTING
+        exporting
           field = 'KORRDEV'
           value = e070-korrdev
-        CHANGING
+        changing
           line  = line
       ).
 
@@ -1284,278 +1284,268 @@ CLASS class_report IMPLEMENTATION.
 *        ).
 
 
-    ENDIF .
+    endif .
 
 
-  ENDMETHOD .
+  endmethod .
 
 
-  METHOD link_click .
+  method link_click .
 
-    DATA:
-      trkorr TYPE trkorr .
+    data:
+      trkorr type trkorr .
 
-    FIELD-SYMBOLS:
-      <table> TYPE STANDARD TABLE,
-      <line>  TYPE any,
-      <field> TYPE any.
+    field-symbols:
+      <table> type standard table,
+      <line>  type any,
+      <field> type any.
 
-    IF table IS NOT INITIAL .
+    if go_data is not initial .
 
-      ASSIGN table->* TO <table>.
+      assign go_data->* to <table>.
 
-      IF <table> IS ASSIGNED .
+      if <table> is assigned .
 
-        READ TABLE <table> ASSIGNING <line> INDEX row .
+        read table <table> assigning <line> index row .
 
-        IF sy-subrc EQ 0 .
+        if sy-subrc eq 0 .
 
-          ASSIGN COMPONENT 'TRKORR' OF STRUCTURE <line> TO <field>.
+          assign component 'TRKORR' of structure <line> to <field>.
 
-          IF <field> IS ASSIGNED .
+          if <field> is assigned .
 
             trkorr = <field>  .
 
-            CALL FUNCTION 'TR_LOG_OVERVIEW_REQUEST_REMOTE'
-              EXPORTING
+            call function 'TR_LOG_OVERVIEW_REQUEST_REMOTE'
+              exporting
                 iv_trkorr = trkorr
 *               iv_dirtype             =
 *               iv_without_check       = ' '
               .
-          ENDIF.
+          endif.
 
-        ENDIF.
+        endif.
 
-      ENDIF.
+      endif.
 
-    ENDIF.
+    endif.
 
-  ENDMETHOD .                    "link_click
+  endmethod .                    "link_click
 
 
-  METHOD process .
+  method process .
 
-    DATA:
-      value TYPE salv_t_row,
-      line  TYPE i.
+    data:
+      value type salv_t_row,
+      line  type i.
 
-    FIELD-SYMBOLS:
-      <line> TYPE snwd_texts .
+    field-symbols:
+      <line> type snwd_texts .
 
-    CASE sy-ucomm .
+    case sy-ucomm .
 
-      WHEN 'REFRESH' .
+      when 'REFRESH' .
 
         me->get_data_refresh( ) .
 
-        IF me->lo_table IS BOUND .
+        if me->lo_table is bound .
 
           me->lo_table->refresh( ) .
 
-        ENDIF .
+        endif .
 
-      WHEN OTHERS .
+      when others .
 
-    ENDCASE .
+    endcase .
 
-  ENDMETHOD .                    "process
+  endmethod .                    "process
 
 
-  METHOD change_tmscsys .
+  method change_tmscsys .
 
 
 *   #verificar: inibir abas no parametro s_amb
 
-    DATA:
-      line       TYPE ty_r_sysnam,
-      lt_tmscsys TYPE tmscsys_tab,
-      ls_tmscsys TYPE ty_tmscsys.
+    data:
+      line       type ty_r_sysnam,
+      lt_tmscsys type tmscsys_tab,
+      ls_tmscsys type ty_tmscsys.
 
-    IF ambiente[] IS NOT INITIAL .
+    if ambiente[] is not initial .
 
-      DO .
+      do .
 
-        READ TABLE ambiente INTO line INDEX sy-index .
+        read table ambiente into line index sy-index .
 
-        IF sy-subrc EQ 0 .
+        if sy-subrc eq 0 .
 
-          READ TABLE gt_tmscsys INTO ls_tmscsys
-            WITH KEY sysnam = line-low .
+          read table gt_tmscsys into ls_tmscsys
+            with key sysnam = line-low .
 
-          IF sy-subrc EQ 0 .
+          if sy-subrc eq 0 .
 
-            APPEND ls_tmscsys TO lt_tmscsys .
-            CLEAR  ls_tmscsys .
+            append ls_tmscsys to lt_tmscsys .
+            clear  ls_tmscsys .
 
-          ENDIF .
+          endif .
 
-        ELSE .
-          EXIT .
-        ENDIF.
+        else .
+          exit .
+        endif.
 
-      ENDDO .
+      enddo .
 
-      IF lines( lt_tmscsys ) EQ 0 .
-      ELSE .
-        REFRESH gt_tmscsys .
-        APPEND LINES OF lt_tmscsys TO gt_tmscsys .
-      ENDIF .
+      if lines( lt_tmscsys ) eq 0 .
+      else .
+        refresh gt_tmscsys .
+        append lines of lt_tmscsys to gt_tmscsys .
+      endif .
 
-    ENDIF .
+    endif .
 
-    FREE:
+    free:
       lt_tmscsys .
 
-  ENDMETHOD.                    "change_tmscsys
+  endmethod.                    "change_tmscsys
 
-  METHOD assign .
+  method assign .
 
-    FIELD-SYMBOLS:
-      <field> TYPE any .
+    field-symbols:
+      <field> type any .
 
 
-    ASSIGN COMPONENT field OF STRUCTURE line TO <field>.
+    assign component field of structure line to <field>.
 
-    IF <field> IS ASSIGNED .
+    if <field> is assigned .
 
       <field> = value .
 
-      UNASSIGN
+      unassign
         <field> .
 
-    ENDIF .
+    endif .
 
-  ENDMETHOD .                    "assign
+  endmethod .                    "assign
 
 
-  METHOD assign_log .
+  method assign_log .
 
-    DATA:
-      fieldname    TYPE char10,
-      steps_line   TYPE ctslg_step,
-      actions_line TYPE ctslg_action.
+    data:
+      lv_fieldname    type char10,
+      ls_steps_line   type ctslg_step,
+      ls_actions_line type ctslg_action.
 
-    IF ( lines( steps ) EQ 0 ) .
-    ELSE .
+    if ( lines( steps ) eq 0 ) .
+    else .
 
-      READ TABLE steps INTO steps_line INDEX lines( steps ) .
-      IF ( sy-subrc EQ 0 ) .
+      read table steps into ls_steps_line index lines( steps ) .
+      if ( sy-subrc eq 0 ) .
 
-        READ TABLE steps_line-actions INTO actions_line INDEX 1 .
-        IF ( sy-subrc EQ 0 ) .
+        read table ls_steps_line-actions into ls_actions_line index 1 .
+        if ( sy-subrc eq 0 ) .
 
-          fieldname = |DT{ field }|.
-          me->assign(
-            EXPORTING
-              field = fieldname
-              value = actions_line-date
-            CHANGING
-              line  = line
-          ).
+          lv_fieldname = |DT{ field }|.
 
-          fieldname = |TM{ field }|.
-          me->assign(
-            EXPORTING
-              field = fieldname
-              value = actions_line-time
-            CHANGING
-              line  = line
-          ).
+          me->assign( exporting field = lv_fieldname
+                                value = ls_actions_line-date
+                      changing  line  = line ) .
 
-        ENDIF .
+          lv_fieldname = |TM{ field }|.
 
-      ENDIF .
+          me->assign( exporting field = lv_fieldname
+                                value = ls_actions_line-time
+                      changing  line  = line ) .
 
-    ENDIF .
+        endif .
 
-  ENDMETHOD .
+      endif .
 
-  METHOD get_data_refresh .
+    endif .
 
-    me->get_data(
-      EXPORTING
-        it_ambient     = ambiente
-        it_request        = i_ordem
-        it_type         = i_tipo
-        it_status       = i_status
-        categoria    = i_categoria
-        it_user      = i_usuario
-        it_date         = i_data
-    ).
+  endmethod .
 
-  ENDMETHOD .                    "get_data_refresh
 
-  METHOD on_link_click.
+  method get_data_refresh .
 
-    me->link_click(
-      EXPORTING
-        row    = row
-        column = column
-    ).
+    me->get_data( exporting it_ambient    = gt_ambient
+                            it_request    = gt_request
+                            it_type       = gt_type
+                            it_status     = gt_status
+                            it_trfunction = gt_trfunction
+                            it_user       = gt_user
+                            it_date       = gt_date ) .
 
-  ENDMETHOD.                    "on_link_click
+  endmethod .                    "get_data_refresh
 
-  METHOD on_added_function .
+
+  method on_link_click.
+
+    me->link_click( exporting row    = row
+                              column = column ) .
+
+  endmethod.                    "on_link_click
+
+
+  method on_added_function .
 
     me->process( ) .
 
-  ENDMETHOD .                    "on_added_function
+  endmethod .                    "on_added_function
 
-ENDCLASS.                    "lcl_report IMPLEMENTATION
+endclass.                    "lcl_report IMPLEMENTATION
 
-
-*--------------------------------------------------------------------*
-*- Tela de seleção
-*--------------------------------------------------------------------*
-DATA:
-  report TYPE REF TO class_report.
 
 *--------------------------------------------------------------------*
 *- Tela de seleção
 *--------------------------------------------------------------------*
-SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE TEXT-001.
+data:
+  report type ref to class_report.
 
-  SELECT-OPTIONS:
-    s_amb FOR trtarget-tarsystem NO INTERVALS OBLIGATORY,
-    p_ordem FOR  e070-trkorr,
-    p_tipo  FOR  e070-trfunction,
-    p_stat  FOR  e070-trstatus DEFAULT 'R',
-    p_categ FOR  e070-korrdev,
-    p_user  FOR  e070-as4user DEFAULT sy-uname ,
-    p_data  FOR  e070-as4date DEFAULT sy-datum .
-*parameters:
-*  p_produ type e070-as4date .
-SELECTION-SCREEN END OF BLOCK b1.
+*--------------------------------------------------------------------*
+*- Tela de seleção
+*--------------------------------------------------------------------*
+selection-screen begin of block b1 with frame title text-001.
+
+select-options:
+  s_amb for trtarget-tarsystem no intervals obligatory,
+  p_ordem for  e070-trkorr,
+  p_tipo  for  e070-trfunction,
+  p_stat  for  e070-trstatus default 'R',
+  p_categ for  e070-korrdev,
+  p_user  for  e070-as4user default sy-uname ,
+  p_data  for  e070-as4date default sy-datum .
+parameters:
+  p_rfcdes type rfcdes-rfcdest .
+selection-screen end of block b1.
 
 *--------------------------------------------------------------------*
 *- Eventos
 *--------------------------------------------------------------------*
-INITIALIZATION.
+initialization.
 
   class_report=>initial(
-    CHANGING
+    changing
       ct_ambient = s_amb[]
   ).
 
 
-START-OF-SELECTION .
+start-of-selection .
 
-  CREATE OBJECT report.
+  create object report.
 
   report->create_structure( it_ambient = s_amb[] ).
 
-  report->get_data(
-    EXPORTING
-      it_ambient     = s_amb[]
-      it_request        = p_ordem[]
-      it_type         = p_tipo[]
-      it_status       = p_stat[]
-      categoria    = p_categ[]
-      it_user      = p_user[]
-      it_date         = p_data[]
-  ).
-
+  report->get_data( exporting it_ambient    = s_amb[]
+                              it_request    = p_ordem[]
+                              it_type       = p_tipo[]
+                              it_status     = p_stat[]
+                              it_trfunction = p_categ[]
+                              it_user       = p_user[]
+                              it_date       = p_data[] ) .
 
 end-of-selection.
 
   report->generate_output( ) .
+
+*
+*
