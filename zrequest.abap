@@ -102,7 +102,6 @@ class class_report definition .
 
     methods generate_output .
 
-
   protected section .
 
     methods on_link_click
@@ -163,19 +162,19 @@ class class_report definition .
       changing
         !line      type any .
 
-    methods cria_coluna
+    methods create_column
       importing
         !fieldname    type lvc_fname
         !outputlen    type lvc_outlen
-        !ref_table    type lvc_rtname
-        !ref_field    type lvc_rfname
+        !ref_table    type lvc_rtname optional
+        !ref_field    type lvc_rfname optional
         !text_l       type lvc_s_fcat-scrtext_l optional
         !text_m       type lvc_s_fcat-scrtext_m optional
         !text_s       type lvc_s_fcat-scrtext_s optional
       changing
         !fieldcatalog type lvc_t_fcat .
 
-    methods cria_coluna_ambiente
+    methods create_ambient_column
       importing
         !ambiente     type class_report=>r_sysnam
       changing
@@ -199,7 +198,7 @@ class class_report definition .
       exporting
         !et_outtab     type standard table .
 
-    methods atualiza_atributos
+    methods update_attributes
       importing
         !ambiente  type r_sysnam
         !ordem     type /gc1/tab_rng_trkorr
@@ -357,15 +356,15 @@ class class_report implementation.
 
     me->create_report(
       exporting
-        it_e070      = gt_e070
-        it_status    = gt_status
-        it_type      = gt_tipo
+        it_e070       = gt_e070
+        it_status     = gt_status
+        it_type       = gt_tipo
         it_trfunction = gt_categoria
-        it_e07t      = gt_e07t
-        table     = go_data
+        it_e07t       = gt_e07t
+        table         = go_data
     ).
 
-    me->atualiza_atributos(
+    me->update_attributes(
       exporting
         ambiente     = it_ambient
         ordem        = it_request
@@ -379,11 +378,13 @@ class class_report implementation.
 
   endmethod.                    "GET_DATA
 
+
   method generate_output .
 
     data:
       column  type ref to cl_salv_column_list,
       columns type ref to cl_salv_columns_table.
+
     field-symbols:
       <table> type standard table .
 
@@ -394,7 +395,6 @@ class class_report implementation.
 
     check <table> is assigned .
 
-
     try.
 
         call method cl_salv_table=>factory
@@ -403,18 +403,14 @@ class class_report implementation.
           changing
             t_table      = <table>.
 
-
         lo_events = lo_table->get_event( ).
 
         set handler me->on_link_click for lo_events.
         set handler me->on_added_function for lo_events.
 
-        lo_table->set_screen_status(
-          pfstatus      = 'STANDARD_FULLSCREEN'
-          report        = 'SAPLKKBL'
-*         report        = sy-cprog
-          set_functions = lo_table->c_functions_all ).
-
+        lo_table->set_screen_status( pfstatus      = 'STANDARD_FULLSCREEN'
+                                     report        = 'SAPLKKBL'
+                                     set_functions = lo_table->c_functions_all ) .
 
         columns = lo_table->get_columns( ).
 
@@ -425,22 +421,19 @@ class class_report implementation.
         column ?= columns->get_column( 'TRFUNCTION' ).
         column->set_long_text( 'Tipo de request' ).
 
-        me->set_text_output(
-          exporting
-            t_tmscsys = gt_tmscsys
-          changing
-            table     = lo_table
-        ).
+        me->set_text_output( exporting t_tmscsys = gt_tmscsys
+                             changing  table     = lo_table ) .
 
-*       Layout de Zebra
+        column ?= columns->get_column( 'OBJECTS' ).
+        if ( column is bound ) .
+          column->set_icon( if_salv_c_bool_sap=>true ).
+          column->set_cell_type( if_salv_c_cell_type=>hotspot ).
+          column->set_long_text( 'Objects' ).
+          column->set_symbol( if_salv_c_bool_sap=>true ).
+        endif .
+
         lo_display = lo_table->get_display_settings( ) .
-        lo_display->set_striped_pattern(  cl_salv_display_settings=>true ) .
-
-**       Ordenação de campos
-*        lo_sorts = lo_table->get_sorts( ) .
-*        lo_sorts->add_sort('AS4DATE') .
-*        lo_sorts->add_sort('AS4TIME') .
-*        lo_sorts->add_sort('TRKORR') .
+        lo_display->set_striped_pattern( cl_salv_display_settings=>true ) .
 
         lo_table->display( ).
 
@@ -453,6 +446,7 @@ class class_report implementation.
     endtry.
 
   endmethod .                    "generate_output
+
 
   method clear_data .
 
@@ -591,7 +585,13 @@ class class_report implementation.
 
     me->change_tmscsys( ambiente = it_ambient ).
 
-    me->cria_coluna(
+    me->create_column( exporting fieldname    = 'OBJECTS'
+                                 outputlen    = 10
+*                                ref_table    = 'E071'
+*                                ref_field    = 'TRKORR'
+                       changing  fieldcatalog = lt_fieldcat ) .
+
+    me->create_column(
       exporting
         fieldname    = 'TRKORR'
         outputlen    = 20
@@ -601,7 +601,7 @@ class class_report implementation.
         fieldcatalog = lt_fieldcat
     ).
 
-    me->cria_coluna(
+    me->create_column(
       exporting
         fieldname    = 'DESCREQ'
         outputlen    = 60
@@ -611,7 +611,7 @@ class class_report implementation.
         fieldcatalog = lt_fieldcat
     ).
 
-    me->cria_coluna(
+    me->create_column(
       exporting
         fieldname    = 'AS4USER'
         outputlen    = 12
@@ -621,7 +621,7 @@ class class_report implementation.
         fieldcatalog = lt_fieldcat
     ).
 
-    me->cria_coluna(
+    me->create_column(
       exporting
         fieldname    = 'TRFUNCTION'
         outputlen    = 42
@@ -633,7 +633,7 @@ class class_report implementation.
         fieldcatalog = lt_fieldcat
     ).
 
-    me->cria_coluna(
+    me->create_column(
       exporting
         fieldname    = 'TRSTATUS'
         outputlen    = 1
@@ -643,7 +643,7 @@ class class_report implementation.
         fieldcatalog = lt_fieldcat
     ).
 
-    me->cria_coluna(
+    me->create_column(
       exporting
         fieldname    = 'KORRDEV'
         outputlen    = 4
@@ -653,26 +653,7 @@ class class_report implementation.
         fieldcatalog = lt_fieldcat
     ).
 
-*    me->cria_coluna(
-*      exporting
-*        fieldname    = 'AS4DATE'
-*        outputlen    = 8
-*        ref_table    = 'E070'
-*        ref_field    = 'AS4DATE'
-*      changing
-*        fieldcatalog = lt_fieldcat
-*    ).
-*    me->cria_coluna(
-*      exporting
-*        fieldname    = 'AS4TIME'
-*        outputlen    = 6
-*        ref_table    = 'E070'
-*        ref_field    = 'AS4TIME'
-*      changing
-*        fieldcatalog = lt_fieldcat
-*    ).
-
-    me->cria_coluna_ambiente(
+    me->create_ambient_column(
       exporting
         ambiente     = it_ambient
       changing
@@ -797,6 +778,10 @@ class class_report implementation.
             line = <line>
 
         ).
+
+        me->assign( exporting field = 'OBJECTS'
+                              value = '@SK@'
+                    changing  line  = <line> ) .
 
         systemid = ls_tmscys-sysnam .
 
@@ -949,10 +934,8 @@ class class_report implementation.
 
       endloop.
 
-
       insert <line> into table <table>.
       unassign <line> .
-*      clear new_line .
 
     endloop.
 
@@ -964,7 +947,7 @@ class class_report implementation.
   endmethod .                    "monta_relatorio
 
 
-  method cria_coluna .
+  method create_column .
 
     data:
       line type lvc_s_fcat .
@@ -977,9 +960,11 @@ class class_report implementation.
     if ( text_l is not initial ) .
       line-scrtext_l = text_l .
     endif .
+
     if ( text_m is not initial ) .
       line-scrtext_m = text_m .
     endif .
+
     if ( text_s is not initial ) .
       line-scrtext_s = text_s .
     endif .
@@ -990,56 +975,44 @@ class class_report implementation.
   endmethod.                    "cria_coluna
 
 
-  method cria_coluna_ambiente .
+  method create_ambient_column .
 
     data:
       fieldname type lvc_fname .
 
 *  Verificando os ambiente passados como parametro
     if ( lines( ambiente ) eq 0 ) .
-
     else .
-
 
       loop at gt_tmscsys into data(line_tmscsys) .
 
         fieldname = line_tmscsys-sysnam .
-        me->cria_coluna(
-          exporting
-            fieldname    = fieldname
-            outputlen    = 10
-            ref_table    = ''
-            ref_field    = ''
-          changing
-            fieldcatalog = fieldcatalog
-        ).
+
+        me->create_column( exporting fieldname    = fieldname
+                                   outputlen    = 10
+                                   ref_table    = ''
+                                   ref_field    = ''
+                          changing fieldcatalog = fieldcatalog ) .
 
         fieldname = |DT{ line_tmscsys-sysnam }| .
-        me->cria_coluna(
-          exporting
-            fieldname    = fieldname
-            outputlen    = 10
-            ref_table    = 'SYST'
-            ref_field    = 'DATUM'
-          changing
-            fieldcatalog = fieldcatalog
-        ).
+
+        me->create_column( exporting fieldname    = fieldname
+                                     outputlen    = 10
+                                     ref_table    = 'SYST'
+                                     ref_field    = 'DATUM'
+                           changing  fieldcatalog = fieldcatalog ) .
 
         fieldname = |TM{ line_tmscsys-sysnam }| .
-        me->cria_coluna(
-          exporting
-            fieldname    = fieldname
-            outputlen    = 10
-            ref_table    = 'SYST'
-            ref_field    = 'UZEIT'
-          changing
-            fieldcatalog = fieldcatalog
-        ).
+
+        me->create_column( exporting fieldname    = fieldname
+                                     outputlen    = 10
+                                     ref_table    = 'SYST'
+                                     ref_field    = 'UZEIT'
+                           changing  fieldcatalog = fieldcatalog ) .
 
       endloop .
 
     endif .
-
 
   endmethod .
 
@@ -1056,7 +1029,7 @@ class class_report implementation.
 
       text_l = text_m = text_s = iv_sysnam .
 
-      me->cria_coluna(
+      me->create_column(
         exporting
           fieldname    = |AS4DATE_{ iv_sysnam }|
           outputlen    = 8
@@ -1070,7 +1043,7 @@ class class_report implementation.
       ).
 
 
-      me->cria_coluna(
+      me->create_column(
         exporting
           fieldname    = |AS4TIME_{ iv_sysnam }|
           outputlen    = 6
@@ -1087,7 +1060,7 @@ class class_report implementation.
 
   endmethod .
 
-  method atualiza_atributos .
+  method update_attributes .
 
     if lines( gt_request ) eq 0 .
       if lines( ordem ) eq 0 .
@@ -1150,6 +1123,7 @@ class class_report implementation.
     endtry .
 
   endmethod .                    "set_text
+
 
   method set_text_output .
 
@@ -1247,7 +1221,6 @@ class class_report implementation.
       ).
 
 *     Tipo de Request
-
       me->assign(
         exporting
           field = 'TRFUNCTION'
@@ -1265,7 +1238,6 @@ class class_report implementation.
           line  = line
       ).
 
-
 *     Categoria da Request
       me->assign(
         exporting
@@ -1275,17 +1247,7 @@ class class_report implementation.
           line  = line
       ).
 
-*        me->assign(
-*          exporting
-*            field = 'KORRDEV_TEXT'
-*            value = ls_categoria-desc
-*          changing
-*            line  = <line>
-*        ).
-
-
     endif .
-
 
   endmethod .
 
@@ -1307,21 +1269,46 @@ class class_report implementation.
       if <table> is assigned .
 
         read table <table> assigning <line> index row .
-
         if sy-subrc eq 0 .
 
           assign component 'TRKORR' of structure <line> to <field>.
-
           if <field> is assigned .
 
             trkorr = <field>  .
 
-            call function 'TR_LOG_OVERVIEW_REQUEST_REMOTE'
-              exporting
-                iv_trkorr = trkorr
-*               iv_dirtype             =
-*               iv_without_check       = ' '
-              .
+            case column .
+              when 'TRKORR' .
+
+                call function 'TR_LOG_OVERVIEW_REQUEST_REMOTE'
+                  exporting
+                    iv_trkorr = trkorr
+*                   iv_dirtype             =
+*                   iv_without_check       = ' '
+                  .
+
+              when 'OBJECTS' .
+
+*                call function 'TRINT_TDR_USER_COMMAND'
+*                  exporting
+*                    iv_object  = trkorr
+*                    iv_type    = 'TASK'
+*                    iv_command = 'REQUEST_SHOW'
+**                  importing
+**                   ev_exit    =
+                .
+                call function 'TRINT_TDR_USER_COMMAND'
+                  exporting
+                    iv_object  = trkorr
+                    iv_type    = 'REQU'
+                    iv_command = 'REQUEST_SHOW'
+*                  importing
+*                   ev_exit    =
+                  .
+
+              when others .
+
+            endcase .
+
           endif.
 
         endif.
