@@ -6,9 +6,7 @@ CLASS local_class DEFINITION .
 
     METHODS constructor
       IMPORTING
-        !iv_pgmid   TYPE sctsobject-pgmid
-        !iv_object  TYPE sctsobject-object
-        !iv_objnam  TYPE sctsobject-text
+        !is_object  TYPE sctsobject
         !iv_rfcdest TYPE rfcdes-rfcdest .
 
     METHODS check_error
@@ -22,6 +20,7 @@ CLASS local_class DEFINITION .
 
     DATA:
       gt_message     TYPE bapiret2_t,
+      gs_object      TYPE sctsobject,
       gv_destination TYPE rfcdes-rfcdest.
 
 ENDCLASS .
@@ -34,10 +33,14 @@ CLASS local_class IMPLEMENTATION.
   METHOD constructor .
 
     CLEAR:
-      me->gv_destination .
+      me->gt_message, me->gv_destination, me->gs_object .
 
     IF ( iv_rfcdest IS NOT INITIAL ) .
       me->gv_destination = iv_rfcdest .
+    ENDIF .
+
+    IF ( is_object IS NOT INITIAL ) .
+      me->gs_object = is_object .
     ENDIF .
 
 
@@ -73,15 +76,19 @@ CLASS local_class IMPLEMENTATION.
 
     "SUBMIT (dir_f5_report) AND RETURN
     SUBMIT rsvrsrs3 AND RETURN
-          WITH objname  = 'ZRFFOBR_D'
-          WITH objnam2  = 'ZRFFOBR_D'
+         "WITH objname  = 'ZRFFOBR_D'
+          WITH objname  = me->gs_object-object
+         "WITH objnam2  = 'ZRFFOBR_D'
+          WITH objnam2  = me->gs_object-object
           WITH versno1  = '00000'
           WITH versno2  = '00000'
           WITH objtyp1  = 'REPS'
           WITH objtyp2  = 'REPS'
-          WITH infoln1a = 'ZRFFOBR_D'
+         "WITH infoln1a = 'ZRFFOBR_D'
+          WITH infoln1a = me->gs_object-object
           WITH infoln1b = ls_infoln1b
-          WITH infoln2a = 'ZRFFOBR_D'
+         "WITH infoln2a = 'ZRFFOBR_D'
+          WITH infoln2a = me->gs_object-object
           WITH infoln2b = ls_infoln2b
           WITH log_dest = me->gv_destination
           WITH rem_syst = 'QAS' .
@@ -106,10 +113,11 @@ SELECTION-SCREEN END OF BLOCK b1.
 
 START-OF-SELECTION .
 
-  DATA(go_report) = NEW local_class( iv_pgmid   = p_pgmid
-                                     iv_object  = p_object
-                                     iv_objnam  = p_objnam
-                                     iv_rfcdest = p_rfcdes ) .
+  DATA(go_report) =
+    NEW local_class( is_object  = VALUE sctsobject( pgmid      = p_pgmid
+                                                    object     = p_object
+                                                    text       = p_objnam )
+                     iv_rfcdest = p_rfcdes ) .
 
   IF ( go_report IS BOUND ) AND
      ( go_report->check_error( ) EQ abap_false ) .
