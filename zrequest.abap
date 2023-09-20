@@ -256,6 +256,7 @@ CLASS class_report DEFINITION .
 
 ENDCLASS.                    "lcl_report DEFINITION
 
+
 *----------------------------------------------------------------------*
 *       CLASS lcl_report IMPLEMENTATION
 *----------------------------------------------------------------------*
@@ -284,8 +285,8 @@ CLASS class_report IMPLEMENTATION.
 *             ( low = 'D01' )
 *             ( low = 'Q01' )
 *             ( low = 'P01' ) ) .
-*             
-    
+*
+
 
     gt_tmscsys =
 *     VALUE #( FOR a IN lt_db_ambient ( sysnam = a-low ) ) .
