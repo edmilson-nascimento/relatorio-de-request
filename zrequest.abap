@@ -249,6 +249,11 @@ CLASS class_report DEFINITION .
 
     METHODS get_data_refresh .
 
+    "! <p class="shorttext synchronized" lang="pt">Busca os ambientes disponiveis cadastrados no sistema</p>
+    CLASS-METHODS get_ambients
+      RETURNING
+        VALUE(result) TYPE tmscsyss .
+
 ENDCLASS.                    "lcl_report DEFINITION
 
 *----------------------------------------------------------------------*
@@ -269,18 +274,21 @@ CLASS class_report IMPLEMENTATION.
 
       lt_db_ambient TYPE tmscsyss.
 
-    lt_db_ambient = me->get_ambients( ) .
+    lt_db_ambient = get_ambients( ) .
 
-    ct_ambient =
-    VALUE #( LET s = rsmds_c_sign-including
-                 o = rsmds_c_option-equal
-             IN sign   = s
-                option = o
-             ( low = 'D01' )
-             ( low = 'Q01' )
-             ( low = 'P01' ) ) .
+*    ct_ambient =
+*    VALUE #( LET s = rsmds_c_sign-including
+*                 o = rsmds_c_option-equal
+*             IN sign   = s
+*                option = o
+*             ( low = 'D01' )
+*             ( low = 'Q01' )
+*             ( low = 'P01' ) ) .
+*             
+    
 
     gt_tmscsys =
+*     VALUE #( FOR a IN lt_db_ambient ( sysnam = a-low ) ) .
       VALUE #( FOR a IN ct_ambient ( sysnam = a-low ) ) .
 
     restriction =
@@ -1466,6 +1474,16 @@ CLASS class_report IMPLEMENTATION.
                             it_date       = gt_date ) .
 
   ENDMETHOD .                    "get_data_refresh
+
+
+  METHOD get_ambients .
+
+    SELECT *
+     UP TO 20 ROWS
+      FROM tmscsys
+      INTO TABLE result .
+
+  ENDMETHOD .
 
 
   METHOD on_link_click.
