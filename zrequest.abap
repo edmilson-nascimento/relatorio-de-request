@@ -1348,9 +1348,7 @@ CLASS class_report IMPLEMENTATION.
         me->get_data_refresh( ) .
 
         IF me->lo_table IS BOUND .
-
           me->lo_table->refresh( ) .
-
         ENDIF .
 
       WHEN OTHERS .
