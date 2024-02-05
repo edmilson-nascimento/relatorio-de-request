@@ -2,7 +2,6 @@
 
 [![N|Solid](https://wiki.scn.sap.com/wiki/download/attachments/1710/ABAP%20Development.png?version=1&modificationDate=1446673897000&api=v2)](https://www.sap.com/brazil/developer.html)
 
-
 Visto a necessidade de criar um relatório para acompanhar o transporte de request's, eu utilizei como modelo a ideia que vi em um cliente e tentei melhorar a codificação. Hoje esse relatório me traz a lista das request's de acordo com a tela de seleção e posso atualizar a visão, tendo assim uma mostra do andamento do transporte. Para isso eu criei a classe local `lcl_report` com os seguintes métodos.
 
 * public section
