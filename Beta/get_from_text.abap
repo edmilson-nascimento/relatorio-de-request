@@ -125,7 +125,7 @@ CLASS /yga/cl_transp_compare IMPLEMENTATION.
     result = VALUE #(
       FOR l IN lr_item
       WHERE ( sign   = if_fsbp_const_range=>sign_include AND
-              option = if_fsbp_const_range=>option_contains_pattern )
+              option = if_fsbp_const_range=>option_equal )
         ( l-low )
     ).
 
@@ -135,7 +135,7 @@ CLASS /yga/cl_transp_compare IMPLEMENTATION.
   METHOD constructor .
 
     me->gt_list = VALUE tab_list(
-      for l in im_list
+      FOR l IN im_list
       ( item = l )
     ).
 
@@ -158,6 +158,9 @@ CLASS /yga/cl_transp_compare IMPLEMENTATION.
 
 
   METHOD show_list .
+
+    DATA:
+      lo_column  TYPE REF TO cl_salv_column_table.
 
     TYPES:
       BEGIN OF ty_popup,
@@ -204,6 +207,16 @@ CLASS /yga/cl_transp_compare IMPLEMENTATION.
     TRY.
         lo_columns->set_color_column( 'COLOR' ).
       CATCH cx_salv_data_error.
+    ENDTRY.
+
+    TRY .
+        lo_column ?= lo_columns->get_column( 'SEQ_NR' ).
+        IF ( lo_column IS NOT BOUND ) .
+          lo_column->set_long_text( |{ 'Item verificado'(i01) }| ) .
+          lo_column->set_medium_text( |{ 'Item verificado'(i01) }| ) .
+          lo_column->set_short_text( |{ 'Item verif'(i01) }| ) .
+        ENDIF .
+      CATCH cx_salv_not_found.
     ENDTRY.
 
     me->go_salv_table->set_screen_popup(
