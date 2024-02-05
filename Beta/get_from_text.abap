@@ -17,10 +17,14 @@ CLASS /yga/cl_transp_compare DEFINITION
 
     "! <p class="shorttext synchronized" lang="pt">Importar a lista de referencia</p>
     METHODS constructor.
-    "! <p class="shorttext synchronized" lang="pt">Exibe a lista de temas gerados</p>
+
+    "! <p class="shorttext synchronized" lang="pt">Retorna a lista de temas gerados</p>
     METHODS get_list
       RETURNING
         VALUE(result) TYPE /yga/cl_transp_compare=>tab_out .
+
+    "! <p class="shorttext synchronized" lang="pt">Exibe a lista de temas gerados</p>
+    METHODS show_list .
 
   PROTECTED SECTION.
 
@@ -39,7 +43,8 @@ CLASS /yga/cl_transp_compare DEFINITION
     DATA:
       gt_list           TYPE tab_list,
       gt_change_request TYPE tab_change_document,
-      gt_out            TYPE tab_out.
+      gt_out            TYPE tab_out,
+      go_salv_table     TYPE REF TO cl_salv_table.
 
     "! <p class="shorttext synchronized" lang="pt">Busca os dados de acordo com o filtro da lista</p>
     METHODS get_data
@@ -76,6 +81,7 @@ CLASS /yga/cl_transp_compare IMPLEMENTATION.
 
   ENDMETHOD .
 
+
   METHOD get_list .
 
     IF ( lines( me->gt_list ) EQ 0 ) .
@@ -87,6 +93,42 @@ CLASS /yga/cl_transp_compare IMPLEMENTATION.
     ENDIF .
 
     me->prepare_data( ) .
+
+  ENDMETHOD .
+
+
+  METHOD show_list .
+
+    me->get_list( ) .
+
+    IF ( lines( me->gt_out ) EQ 0 ) .
+      RETURN .
+    ENDIF .
+
+    TRY.
+        CALL METHOD cl_salv_table=>factory(
+          IMPORTING
+            r_salv_table = me->go_salv_table
+          CHANGING
+            t_table      = me->gt_out ).
+      CATCH cx_salv_msg  .
+    ENDTRY.
+
+
+    DATA(lo_columns) = me->go_salv_table->get_columns( ) .
+    IF ( lo_columns IS NOT BOUND ) .
+      RETURN .
+    ENDIF .
+
+    lo_columns->set_optimize( 'A' ).
+    lo_columns->set_key_fixation( abap_true ).
+
+    TRY.
+        lo_columns->set_color_column( 'COLOR' ).
+      CATCH cx_salv_data_error.
+    ENDTRY.
+
+    me->go_salv_table->display( ).
 
   ENDMETHOD .
 
