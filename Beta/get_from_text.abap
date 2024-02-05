@@ -7,16 +7,24 @@ CLASS /yga/cl_transp_compare DEFINITION
 
     TYPES:
       BEGIN OF ty_out,
-        item  TYPE char10.
-        INCLUDE TYPE /yga/transp_ctrl_st.
-      TYPES:
-        color TYPE lvc_t_scol,
+        item         TYPE char10,
+        charm_change TYPE /yga/transp_ctrl_st-charm_change,
+        descricao_cd TYPE /yga/transp_ctrl_st-descricao_cd,
+        trkorr       TYPE /yga/transp_ctrl_st-trkorr,
+        color        TYPE lvc_t_scol,
       END OF ty_out,
       tab_out TYPE STANDARD TABLE OF ty_out
                WITH DEFAULT KEY.
 
+    "! <p class="shorttext synchronized" lang="pt">Retorna lista de item para filtro de validação</p>
+    CLASS-METHODS get_items
+      RETURNING
+        VALUE(result) TYPE char10_t .
+
     "! <p class="shorttext synchronized" lang="pt">Importar a lista de referencia</p>
-    METHODS constructor.
+    METHODS constructor
+      IMPORTING
+        im_list TYPE  char10_t .
 
     "! <p class="shorttext synchronized" lang="pt">Retorna a lista de temas gerados</p>
     METHODS get_list
@@ -68,15 +76,67 @@ ENDCLASS.
 CLASS /yga/cl_transp_compare IMPLEMENTATION.
 
 
+  METHOD get_items .
+
+    TYPES:
+      tab_item TYPE RANGE OF char10 .
+    DATA:
+      lr_item TYPE tab_item .
+
+    DATA(ls_excluded_options) = VALUE rsoptions(
+      bt = abap_on
+      cp = abap_on
+      eq = abap_off
+      ge = abap_on
+      gt = abap_on
+      le = abap_on
+      lt = abap_on
+      nb = abap_on
+      ne = abap_on
+      np = abap_on
+    ).
+
+    CALL FUNCTION 'COMPLEX_SELECTIONS_DIALOG'
+      EXPORTING
+        title             = 'Lista de itens (AST ou INC)'
+*       text              =                  " Text for Options Dialog Box
+*       signed            = 'X'              " X: Sign Allowed
+*       lower_case        = space            " X: Upper/Lowercase
+        no_interval_check = abap_on
+*       just_display      = space            " X: Display Only
+*       just_incl         = space            " X: Select Only
+        excluded_options  = ls_excluded_options
+*       description       =                  " Field Description If Different
+*       help_field        =                  " Dictionary Field Name for F1/F4
+*       search_help       =
+*       tab_and_field     =                  " Table Name, Field Name
+      TABLES
+        range             = lr_item                " Content Table
+      EXCEPTIONS
+        no_range_tab      = 1                " Table Not a RANGES Table
+        cancelled         = 2                " Action was canceled
+        internal_error    = 3                " Internal Error
+        invalid_fieldname = 4                " Incorrect Field Description
+        OTHERS            = 5.
+    IF ( sy-subrc NE 0 ) .
+      RETURN .
+    ENDIF.
+
+    result = VALUE #(
+      FOR l IN lr_item
+      WHERE ( sign   = if_fsbp_const_range=>sign_include AND
+              option = if_fsbp_const_range=>option_contains_pattern )
+        ( l-low )
+    ).
+
+  ENDMETHOD .
+
+
   METHOD constructor .
 
     me->gt_list = VALUE tab_list(
-      ( item = 'INC2927814' )
-      ( item = 'AST-99999' )
-      ( item = 'AST-74088' )
-      ( item = 'AST-79334' )
-      ( item = 'AST-81186' )
-      ( item = 'AST-84323' )
+      for l in im_list
+      ( item = l )
     ).
 
   ENDMETHOD .
@@ -99,11 +159,29 @@ CLASS /yga/cl_transp_compare IMPLEMENTATION.
 
   METHOD show_list .
 
+    TYPES:
+      BEGIN OF ty_popup,
+        start_column TYPE i,
+        end_column   TYPE i,
+        start_line   TYPE i,
+        end_line     TYPE i,
+      END OF ty_popup .
+
     me->get_list( ) .
 
     IF ( lines( me->gt_out ) EQ 0 ) .
       RETURN .
     ENDIF .
+
+    DATA(ls_popup) = VALUE ty_popup(
+      start_column = 2
+      end_column   = 90
+      start_line   = 2
+      end_line     = COND #(
+                       WHEN lines( me->gt_out ) GT 25
+                       THEN 25
+                       ELSE ( lines( me->gt_out ) + 2 ) )
+    ).
 
     TRY.
         CALL METHOD cl_salv_table=>factory(
@@ -120,15 +198,23 @@ CLASS /yga/cl_transp_compare IMPLEMENTATION.
       RETURN .
     ENDIF .
 
-    lo_columns->set_optimize( 'A' ).
-    lo_columns->set_key_fixation( abap_true ).
+    lo_columns->set_optimize( ) .
+    lo_columns->set_key_fixation( abap_on ).
 
     TRY.
         lo_columns->set_color_column( 'COLOR' ).
       CATCH cx_salv_data_error.
     ENDTRY.
 
-    me->go_salv_table->display( ).
+    me->go_salv_table->set_screen_popup(
+      EXPORTING
+        start_column = ls_popup-start_column
+        end_column   = ls_popup-end_column
+        start_line   = ls_popup-start_line
+        end_line     = ls_popup-end_line
+    ).
+
+    me->go_salv_table->display( ) .
 
   ENDMETHOD .
 
