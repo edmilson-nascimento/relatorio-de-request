@@ -1,7 +1,7 @@
 # Relatório de request's (em construção)
 
 ![Static Badge](https://img.shields.io/badge/development-abap-blue)
-![GitHub commit activity (branch)](https://img.shields.io/github/commit-activity/t/edmilson-nascimento/abap-7.4)
+![GitHub commit activity (branch)](https://img.shields.io/github/commit-activity/t/edmilson-nascimento/relatorio-de-request)
 
 
 Visto a necessidade de criar um relatório para acompanhar o transporte de request's, eu utilizei como modelo a ideia que vi em um cliente e tentei melhorar a codificação. Hoje esse relatório me traz a lista das request's de acordo com a tela de seleção e posso atualizar a visão, tendo assim uma mostra do andamento do transporte. Para isso eu criei a classe local `lcl_report` com os seguintes métodos.
