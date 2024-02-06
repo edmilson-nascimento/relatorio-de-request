@@ -11,6 +11,8 @@ CLASS /yga/cl_transp_compare DEFINITION
         charm_change TYPE /yga/transp_ctrl_st-charm_change,
         descricao_cd TYPE /yga/transp_ctrl_st-descricao_cd,
         trkorr       TYPE /yga/transp_ctrl_st-trkorr,
+        status_aprov TYPE /yga/transp_ctrl_st-status_aprov,
+        status       TYPE char30,
         color        TYPE lvc_t_scol,
       END OF ty_out,
       tab_out TYPE STANDARD TABLE OF ty_out
@@ -43,8 +45,7 @@ CLASS /yga/cl_transp_compare DEFINITION
         item TYPE char10,
       END OF ty_list,
       tab_list            TYPE STANDARD TABLE OF ty_list
-               WITH DEFAULT KEY,
-
+                          WITH DEFAULT KEY,
       tab_change_document TYPE STANDARD TABLE OF /yga/transp_ctrl,
       tab_descricao       TYPE RANGE OF /yga/transp_ctrl-descricao_cd.
 
@@ -83,17 +84,18 @@ CLASS /yga/cl_transp_compare IMPLEMENTATION.
     DATA:
       lr_item TYPE tab_item .
 
-    DATA(ls_excluded_options) = VALUE rsoptions(
-      bt = abap_on
-      cp = abap_on
-      eq = abap_off
-      ge = abap_on
-      gt = abap_on
-      le = abap_on
-      lt = abap_on
-      nb = abap_on
-      ne = abap_on
-      np = abap_on
+    DATA(ls_excluded_options) =
+      VALUE rsoptions(
+        bt = abap_on
+        cp = abap_on
+        eq = abap_off
+        ge = abap_on
+        gt = abap_on
+        le = abap_on
+        lt = abap_on
+        nb = abap_on
+        ne = abap_on
+        np = abap_on
     ).
 
     CALL FUNCTION 'COMPLEX_SELECTIONS_DIALOG'
@@ -148,9 +150,7 @@ CLASS /yga/cl_transp_compare IMPLEMENTATION.
       RETURN .
     ENDIF .
 
-    IF ( me->get_data( ) EQ abap_false ) .
-      RETURN .
-    ENDIF .
+    me->get_data( ) .
 
     me->prepare_data( ) .
 
@@ -192,7 +192,7 @@ CLASS /yga/cl_transp_compare IMPLEMENTATION.
             r_salv_table = me->go_salv_table
           CHANGING
             t_table      = me->gt_out ).
-      CATCH cx_salv_msg  .
+      CATCH cx_salv_msg .
     ENDTRY.
 
 
@@ -210,11 +210,21 @@ CLASS /yga/cl_transp_compare IMPLEMENTATION.
     ENDTRY.
 
     TRY .
-        lo_column ?= lo_columns->get_column( 'SEQ_NR' ).
+        lo_column ?= lo_columns->get_column( 'ITEM' ).
         IF ( lo_column IS NOT BOUND ) .
           lo_column->set_long_text( |{ 'Item verificado'(i01) }| ) .
           lo_column->set_medium_text( |{ 'Item verificado'(i01) }| ) .
           lo_column->set_short_text( |{ 'Item verif'(i01) }| ) .
+        ENDIF .
+      CATCH cx_salv_not_found.
+    ENDTRY.
+
+    TRY .
+        lo_column ?= lo_columns->get_column( 'STATUS' ).
+        IF ( lo_column IS NOT BOUND ) .
+          lo_column->set_long_text( |{ 'Status'(i02) }| ) .
+          lo_column->set_medium_text( |{ 'Status'(i02) }| ) .
+          lo_column->set_short_text( |{ 'Status'(i02) }| ) .
         ENDIF .
       CATCH cx_salv_not_found.
     ENDTRY.
@@ -262,31 +272,36 @@ CLASS /yga/cl_transp_compare IMPLEMENTATION.
 
     DATA(lt_amarelo) = VALUE lvc_t_scol(
       ( color = VALUE #( col = 3
-                         int = 1 ) )
-    ) .
+                         int = 1 ) ) ) .
 
-    CLEAR me->gt_out  .
+    CLEAR me->gt_out .
+
 
     IF ( lines( me->gt_change_request ) EQ 0 ) .
+      LOOP AT me->gt_list INTO  DATA(ls_list) .
+        me->gt_out = VALUE #(
+          BASE me->gt_out ( item   = ls_list-item
+                            status = |{ 'Não adicionado ao Adamastor'(s01) }|
+                            color  = lt_amarelo ) ) .
+      ENDLOOP .
       RETURN .
     ENDIF .
 
-    LOOP AT me->gt_list INTO DATA(ls_list) .
+    LOOP AT me->gt_list INTO ls_list .
 
       DATA(lines_from_item) = me->get_lines_from_item( ls_list-item ) .
 
       IF ( lines( lines_from_item ) EQ 0 ) .
-        " append com linhas vermelhas
+        " append com linhas de erro
         me->gt_out = VALUE #(
-          BASE me->gt_out ( item  = ls_list-item
-                            color = lt_amarelo )
-        ) .
+          BASE me->gt_out ( item   = ls_list-item
+                            status = |{ 'Não adicionado ao Adamastor'(s01) }|
+                            color  = lt_amarelo ) ) .
         CONTINUE .
       ENDIF .
 
       me->gt_out = VALUE #(
-        BASE me->gt_out ( LINES OF lines_from_item )
-      ) .
+        BASE me->gt_out ( LINES OF lines_from_item ) ) .
 
     ENDLOOP .
 
