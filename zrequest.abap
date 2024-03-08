@@ -685,9 +685,6 @@ CLASS class_report IMPLEMENTATION.
         OTHERS                    = 2.
 
     IF sy-subrc EQ 0 .
-
-    ELSE .
-
     ENDIF.
 
   ENDMETHOD .                    "cria_tabela
