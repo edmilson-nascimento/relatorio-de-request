@@ -11,17 +11,17 @@
 
 Devido à necessidade de criar um relatório para acompanhar o transporte de requests, utilizei como modelo uma ideia que vi em um cliente e busquei aprimorar a codificação. Atualmente, esse relatório apresenta a lista de requests conforme a tela de seleção, permitindo atualizar a visualização e, assim, acompanhar o andamento dos transportes. Para isso, criei a classe local `lcl_report` com os seguintes métodos:
 
-* **public section**
+* **Seção Pública**
   * [initial](#initial)
   * [cria_tabela](#cria_tabela)
   * [get_data](#get_data)
   * [generate_output](#generate_output)
 
-* **protected section**
+* **Seção Protegida**
   * [on_link_click](#on_link_click)
   * [on_added_function](#on_added_function)
 
-* **private section**
+* **Seção Privada**
   * [limpar_dados](#limpar_dados)
   * [carrega_descricao](#carrega_descricao)
   * [seleciona_dados](#seleciona_dados)
@@ -38,7 +38,7 @@ Devido à necessidade de criar um relatório para acompanhar o transporte de req
 
 A escolha dos métodos foi feita por estarem relacionados ao módulo que eu tratava quando desenvolvi a solução.
 
-## Public Section
+## Seção Pública
 Métodos da seção pública.
 
 ### initial
