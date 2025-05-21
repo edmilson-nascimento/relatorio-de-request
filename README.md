@@ -1,42 +1,43 @@
-# Relatório de request's (em construção)
+# Relatório de Requests (em construção)
 
 ![Static Badge](https://img.shields.io/badge/development-abap-blue)
 ![GitHub commit activity (branch)](https://img.shields.io/github/commit-activity/t/edmilson-nascimento/relatorio-de-request)
 
+Devido à necessidade de criar um relatório para acompanhar o transporte de requests, utilizei como modelo uma ideia que vi em um cliente e busquei aprimorar a codificação. Atualmente, esse relatório apresenta a lista de requests conforme a tela de seleção, permitindo atualizar a visualização e, assim, acompanhar o andamento dos transportes. Para isso, criei a classe local `lcl_report` com os seguintes métodos:
 
-Visto a necessidade de criar um relatório para acompanhar o transporte de request's, eu utilizei como modelo a ideia que vi em um cliente e tentei melhorar a codificação. Hoje esse relatório me traz a lista das request's de acordo com a tela de seleção e posso atualizar a visão, tendo assim uma mostra do andamento do transporte. Para isso eu criei a classe local `lcl_report` com os seguintes métodos.
+* **public section**
+  * [initial](#initial)
+  * [cria_tabela](#cria_tabela)
+  * [get_data](#get_data)
+  * [generate_output](#generate_output)
 
-* public section
-	* [initial](#initial)
-	* [cria_tabela](#cria_tabela)
-	* [get_data](#get_data)
-	* [generate_output](#generate_output)
+* **protected section**
+  * [on_link_click](#on_link_click)
+  * [on_added_function](#on_added_function)
 
-* protected
-	* [on_link_click](#on_link_click)
-	* [on_added_function](#on_added_function)
-
-* private section
-	* [limpar_dados](#limpar_dados)
-	* [carrega_descricao](#carrega_descricao)
-	* [seleciona_dados](#seleciona_dados)
-	* [cria_coluna](#cria_coluna)
-	* [monta_relatorio](#monta_relatorio)
-	* [atualiza_atributos](#atualiza_atributos)
-	* [set_text](#set_text)
+* **private section**
+  * [limpar_dados](#limpar_dados)
+  * [carrega_descricao](#carrega_descricao)
+  * [seleciona_dados](#seleciona_dados)
+  * [cria_coluna](#cria_coluna)
+  * [monta_relatorio](#monta_relatorio)
+  * [atualiza_atributos](#atualiza_atributos)
+  * [set_text](#set_text)
   * [set_text_output](#set_text_output)
   * [link_click](#link_click)
   * [process](#process)
   * [change_tmscsys](#change_tmscsys)
   * [assign](#assign)
-  * [get_data_refresh ](#get_data_refresh )
-  
- foi escolhida apenas por ser relacionada ao modulo que eu tratava quando desenvolvi a solução.
+  * [get_data_refresh](#get_data_refresh)
 
-## public section ##
-Métodos da sessão publica.
-### initial ###
-Este tem como objetivo configurar os ambientes que serão exibidos no inicio do relatório e automaticamente, tambem as colunas que serão exibidas.
+A escolha dos métodos foi feita por estarem relacionados ao módulo que eu tratava quando desenvolvi a solução.
+
+## Public Section
+Métodos da seção pública.
+
+### initial
+Este método tem como objetivo configurar os ambientes que serão exibidos no início do relatório e, automaticamente, também as colunas que serão apresentadas.
+
 ```abap
 method initial .
 
@@ -58,13 +59,11 @@ method initial .
      if sy-subrc eq 0 .
  
        loop at t_tmscsys into ls_tmscsys .
- 
          ls_sysnam-sign = 'I' .
          ls_sysnam-option = 'EQ' .
          ls_sysnam-low = ls_tmscsys-sysnam .
          append ls_sysnam to ambiente .
          clear  ls_sysnam .
- 
        endloop.
  
        sort ambiente ascending by low .
@@ -104,13 +103,13 @@ method initial .
             with sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
     endif.
 
-
   endmethod .                    "initial
 
   method get_data.
 ```
 ### cria_tabela ###
-Depois de definidos os Ambientes, agora será criada uma tabela dinâmica. Desta forma temos as colunas de acordo com os ambientes que são informados na tela de seleção. Ao inves de uma `tabela interna`, é criada uma referência que pode ser acessada vida `field-symbols`.
+Após definir os ambientes, será criada uma tabela dinâmica. Dessa forma, as colunas são geradas de acordo com os ambientes informados na tela de seleção. Em vez de uma tabela interna fixa, é criada uma referência que pode ser acessada via `field-symbols`.
+
 ```abap
 method cria_tabela .
 
