@@ -1,7 +1,13 @@
 # Relatório de Requests (em construção)
 
-![Static Badge](https://img.shields.io/badge/development-abap-blue)
-![GitHub commit activity (branch)](https://img.shields.io/github/commit-activity/t/edmilson-nascimento/relatorio-de-request)
+![ABAP](https://img.shields.io/badge/ABAP-0051B5?style=flat&logo=sap&logoColor=white)
+![SAP](https://img.shields.io/badge/SAP-0FAAFF?style=flat&logo=sap&logoColor=white)
+![ABAP OO](https://img.shields.io/badge/ABAP_OO-276DC3?style=flat&logo=sap&logoColor=white)
+![SAP On-Premise](https://img.shields.io/badge/SAP_On--Premise-F0AB00?style=flat&logo=sap&logoColor=black)
+![Eclipse ADT](https://img.shields.io/badge/Eclipse_ADT-2C2255?style=flat&logo=eclipse&logoColor=white)
+![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat&logo=github&logoColor=white)
+![GitHub Commits](https://img.shields.io/github/commit-activity/t/edmilson-nascimento/relatorio-de-request?style=flat&logo=github)
+![GitHub Last Commit](https://img.shields.io/github/last-commit/edmilson-nascimento/relatorio-de-request?style=flat&logo=github)
 
 Devido à necessidade de criar um relatório para acompanhar o transporte de requests, utilizei como modelo uma ideia que vi em um cliente e busquei aprimorar a codificação. Atualmente, esse relatório apresenta a lista de requests conforme a tela de seleção, permitindo atualizar a visualização e, assim, acompanhar o andamento dos transportes. Para isso, criei a classe local `lcl_report` com os seguintes métodos:
 
